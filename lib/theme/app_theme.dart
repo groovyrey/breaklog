@@ -7,30 +7,17 @@ import 'package:google_fonts/google_fonts.dart';
 class AppColors {
   AppColors._();
 
-  static const _background = Color(0xFF000000);
-  static const _surface = Color(0xFF0D0D0D);
-  static const _surfaceVariant = Color(0xFF161616);
-  static const _onSurface = Color(0xFFFAFAFA);
-  static const _onSurfaceVariant = Color(0xFFA3A3A3);
-  static const _outline = Color(0xFF262626);
-  static const _error = Color(0xFFF87171);
+  static const Color background = Color(0xFF000000);
+  static const Color surface = Color(0xFF0D0D0D);
+  static const Color surfaceVariant = Color(0xFF161616);
+  static const Color onSurface = Color(0xFFFAFAFA);
+  static const Color onSurfaceVariant = Color(0xFFA3A3A3);
+  static const Color outline = Color(0xFF262626);
+  static const Color error = Color(0xFFF87171);
 
-  static const _red = Color(0xFFE53935);
-  static const _redOn = Color(0xFFFFFFFF);
-  static const _redSoft = Color(0xFF2A0E0C);
-
-  static Color get background => _background;
-  static Color get surface => _surface;
-  static Color get onSurface => _onSurface;
-  static Color get onSurfaceVariant => _onSurfaceVariant;
-  static Color get outline => _outline;
-  static Color get surfaceVariant => _surfaceVariant;
-  static Color get error => _error;
-  static Color get accent => _red;
-  static Color get accentSoft => _redSoft;
-  static Color get onAccent => _redOn;
-  static Color get onAccentSoft => _onSurface;
-  static Color get cardBorder => _outline;
+  static const Color accent = Color(0xFFE53935);
+  static const Color onAccent = Color(0xFFFFFFFF);
+  static const Color accentSoft = Color(0xFF2A0E0C);
 }
 
 class AppRadius {
@@ -47,24 +34,24 @@ ThemeData buildDarkTheme() {
     useMaterial3: true,
     brightness: Brightness.dark,
     colorScheme: const ColorScheme.dark(
-      primary: AppColors._red,
-      onPrimary: AppColors._redOn,
-      primaryContainer: AppColors._redSoft,
-      onPrimaryContainer: AppColors._onSurface,
-      secondary: AppColors._red,
-      onSecondary: AppColors._redOn,
-      secondaryContainer: AppColors._redSoft,
-      onSecondaryContainer: AppColors._onSurface,
-      surface: AppColors._surface,
-      surfaceContainerHighest: AppColors._surfaceVariant,
-      error: AppColors._error,
-      onSurface: AppColors._onSurface,
-      onSurfaceVariant: AppColors._onSurfaceVariant,
-      outline: AppColors._outline,
-      onError: AppColors._background,
+      primary: AppColors.accent,
+      onPrimary: AppColors.onAccent,
+      primaryContainer: AppColors.accentSoft,
+      onPrimaryContainer: AppColors.onSurface,
+      secondary: AppColors.accent,
+      onSecondary: AppColors.onAccent,
+      secondaryContainer: AppColors.accentSoft,
+      onSecondaryContainer: AppColors.onSurface,
+      surface: AppColors.surface,
+      surfaceContainerHighest: AppColors.surfaceVariant,
+      error: AppColors.error,
+      onSurface: AppColors.onSurface,
+      onSurfaceVariant: AppColors.onSurfaceVariant,
+      outline: AppColors.outline,
+      onError: AppColors.background,
     ),
-    scaffoldBackgroundColor: AppColors._background,
-    dividerColor: AppColors._outline,
+    scaffoldBackgroundColor: AppColors.background,
+    dividerColor: AppColors.outline,
     pageTransitionsTheme: const PageTransitionsTheme(
       builders: {
         TargetPlatform.android: CupertinoPageTransitionsBuilder(),
@@ -109,7 +96,7 @@ ThemeData _applyComponentThemes(ThemeData theme) {
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: AppColors.accent,
-        side: const BorderSide(color: AppColors._outline),
+        side: const BorderSide(color: AppColors.outline),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.field),
         ),
@@ -118,23 +105,23 @@ ThemeData _applyComponentThemes(ThemeData theme) {
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: AppColors.surface,
-      hintStyle: const TextStyle(color: AppColors._onSurfaceVariant),
+      hintStyle: const TextStyle(color: AppColors.onSurfaceVariant),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadius.field),
-        borderSide: const BorderSide(color: AppColors._outline),
+        borderSide: const BorderSide(color: AppColors.outline),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadius.field),
-        borderSide: const BorderSide(color: AppColors._outline),
+        borderSide: const BorderSide(color: AppColors.outline),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadius.field),
-        borderSide: const BorderSide(color: AppColors._red),
+        borderSide: const BorderSide(color: AppColors.accent),
       ),
     ),
     navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: AppColors._surface,
-      indicatorColor: AppColors._redSoft,
+      backgroundColor: AppColors.surface,
+      indicatorColor: AppColors.accentSoft,
       height: 68,
       iconTheme: WidgetStateProperty.resolveWith((states) {
         final selected = states.contains(WidgetState.selected);
@@ -153,13 +140,13 @@ ThemeData _applyComponentThemes(ThemeData theme) {
     ),
     snackBarTheme: SnackBarThemeData(
       backgroundColor: AppColors.surfaceVariant,
-      contentTextStyle: const TextStyle(color: AppColors._onSurface),
+      contentTextStyle: const TextStyle(color: AppColors.onSurface),
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.field),
       ),
     ),
-    dividerTheme: const DividerThemeData(color: AppColors._outline, thickness: 1),
+    dividerTheme: const DividerThemeData(color: AppColors.outline, thickness: 1),
   );
 }
 
