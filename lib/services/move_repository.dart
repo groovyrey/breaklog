@@ -82,7 +82,7 @@ class MoveRepository extends ChangeNotifier {
               m.notes.toLowerCase().contains(needle))
           .toList();
     }
-    return result
+    return result.toList()
       ..sort((a, b) => b.learnedAt.compareTo(a.learnedAt));
   }
 
