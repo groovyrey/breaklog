@@ -62,6 +62,66 @@ class BrkChip extends StatelessWidget {
   }
 }
 
+/// Checkbox row used inside accordions for single-choice lists.
+class BrkCheckOption extends StatelessWidget {
+  const BrkCheckOption({
+    super.key,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.accentSoft : AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.control),
+          border: Border.all(
+            color: selected ? AppColors.accent : AppColors.outline,
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: context.appTextTheme.titleSmall?.copyWith(
+                  color:
+                      selected ? AppColors.accent : AppColors.onSurfaceVariant,
+                ),
+              ),
+            ),
+            Container(
+              width: 22,
+              height: 22,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(6),
+                color: selected ? AppColors.accent : Colors.transparent,
+                border: Border.all(
+                  color: selected ? AppColors.accent : AppColors.outline,
+                ),
+              ),
+              child: selected
+                  ? const Icon(Icons.check, size: 15, color: AppColors.onAccent)
+                  : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// Row used inside sheets and dialogs. Keeps every option list looking the
 /// same instead of borrowing ListTile.
 class BrkOptionTile extends StatelessWidget {

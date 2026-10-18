@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../components/index.dart';
 import '../../theme/app_theme.dart';
 import '../edit/add_edit_move_screen.dart';
+import '../sets/set_builder_screen.dart';
 import 'sets_tab.dart';
 import 'vocabulary_tab.dart';
 
@@ -29,15 +30,29 @@ class _LibraryScreenState extends State<LibraryScreen> {
               icon: Icons.add_circle_outline,
               onTap: () => Navigator.of(ctx).pop('move'),
             ),
+            BrkOptionTile(
+              title: 'New set',
+              subtitle: 'Group moves into a routine',
+              icon: Icons.queue_music_outlined,
+              onTap: () => Navigator.of(ctx).pop('set'),
+            ),
           ],
         ),
       ),
     );
 
-    if (choice == 'move' && mounted) {
-      await Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const AddEditMoveScreen()),
-      );
+    if (!mounted) return;
+    switch (choice) {
+      case 'move':
+        await Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const AddEditMoveScreen()),
+        );
+      case 'set':
+        await Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const SetBuilderScreen()),
+        );
+      case null:
+        break;
     }
   }
 

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../components/index.dart';
 import '../../models/media.dart';
@@ -9,6 +8,7 @@ import '../../models/move.dart';
 import '../../state/app_state.dart';
 import '../../services/media_store.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/media_actions.dart';
 import '../edit/add_edit_move_screen.dart';
 
 class MoveDetailScreen extends StatelessWidget {
@@ -169,21 +169,8 @@ class MoveDetailScreen extends StatelessWidget {
     );
   }
 
-  void _openMedia(BuildContext context, MoveMedia media) {
-    if (media.isRemote) {
-      launchUrl(Uri.parse(media.value), mode: LaunchMode.externalApplication);
-      return;
-    }
-    switch (media.kind) {
-      case MediaKind.photo:
-        showBrkImageViewer(context, media.value);
-      case MediaKind.video:
-      case MediaKind.record:
-        showBrkVideoViewer(context, media.value);
-      case MediaKind.link:
-        break;
-    }
-  }
+  void _openMedia(BuildContext context, MoveMedia media) =>
+      openMedia(context, media);
 
   Future<void> _confirmDelete(
       BuildContext context, AppState state, BboyMove move) async {

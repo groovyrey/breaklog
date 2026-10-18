@@ -7,6 +7,7 @@ import '../../models/media.dart';
 import '../../models/move.dart';
 import '../../state/app_state.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/media_actions.dart';
 import 'media_picker.dart';
 
 class AddEditMoveScreen extends StatefulWidget {
@@ -125,15 +126,22 @@ class _AddEditMoveScreenState extends State<AddEditMoveScreen> {
                       onChanged: (v) => setState(() => _difficulty = v.round()),
                     ),
                     const SizedBox(height: 24),
-                    _label('Depth'),
-                    const SizedBox(height: 10),
-                    BrkSegmented<MoveDepth>(
-                      value: _depth,
-                      options: [
-                        for (final d in MoveDepth.values)
-                          (value: d, label: d.label),
-                      ],
-                      onChanged: (d) => setState(() => _depth = d),
+                    BrkAccordion(
+                      title: 'Depth',
+                      summary: _depth.label,
+                      child: Column(
+                        children: [
+                          for (final d in MoveDepth.values)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: BrkCheckOption(
+                                label: d.label,
+                                selected: _depth == d,
+                                onTap: () => setState(() => _depth = d),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 24),
                     BrkField(
@@ -150,7 +158,7 @@ class _AddEditMoveScreenState extends State<AddEditMoveScreen> {
                       for (var i = 0; i < _media.length; i++) ...[
                         BrkMediaTile(
                           media: _media[i],
-                          onOpen: () {},
+                          onOpen: () => openMedia(context, _media[i]),
                           onRemove: () =>
                               setState(() => _media.removeAt(i)),
                         ),

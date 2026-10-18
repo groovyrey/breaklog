@@ -4,8 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
+import 'package:breaklog/models/category.dart';
 import 'package:breaklog/models/media.dart';
 import 'package:breaklog/models/move.dart';
+import 'package:breaklog/models/set.dart';
 import 'package:breaklog/services/version_checker.dart';
 import 'package:breaklog/state/update_notifier.dart';
 import 'package:breaklog/utils/semver.dart';
@@ -143,6 +145,20 @@ void main() {
     });
   });
 
+  group('category store', () {
+    test('reads back a category written by toJson', () {
+      const category = MoveCategory('Airfreeze');
+      final restored = MoveCategory.fromJson(
+        jsonDecode(jsonEncode(category.toJson())),
+      );
+      expect(restored.name, 'Airfreeze');
+    });
+
+    test('still accepts a bare string from older storage', () {
+      expect(MoveCategory.fromJson('Section').name, 'Section');
+    });
+  });
+
   group('move model', () {
     test('round-trips through JSON', () {
       final move = BboyMove(
@@ -194,6 +210,28 @@ void main() {
       });
       expect(move.difficulty, 5);
       expect(move.depth, MoveDepth.universal);
+    });
+  });
+
+  group('set model', () {
+    test('keeps its attachments through JSON', () {
+      final set = MoveSet(
+        id: '9',
+        name: 'Round one',
+        moveIds: const ['1', '2'],
+        createdAt: DateTime.utc(2026, 10, 2),
+        media: const [
+          MoveMedia(
+            id: 'm1',
+            kind: MediaKind.video,
+            value: '/data/breaklog_media/1.mp4',
+          ),
+        ],
+      );
+      final back = MoveSet.fromJson(jsonDecode(jsonEncode(set.toJson())));
+      expect(back.media.single.kind, MediaKind.video);
+      expect(back.media.single.value, '/data/breaklog_media/1.mp4');
+      expect(back.moveIds, ['1', '2']);
     });
   });
 }

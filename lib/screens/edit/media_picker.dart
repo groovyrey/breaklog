@@ -151,7 +151,10 @@ Future<MoveMedia?> _capture(
         ? await picker.pickImage(source: source, maxWidth: 1600, imageQuality: 85)
         : await picker.pickVideo(source: source);
     if (picked == null || !context.mounted) return null;
-    final path = await MediaStore.importXFile(picked);
+    final path = await MediaStore.importXFile(
+      picked,
+      fallbackExtension: image ? 'jpg' : 'mp4',
+    );
     return MoveMedia(
       id: '${DateTime.now().microsecondsSinceEpoch}',
       kind: kind,

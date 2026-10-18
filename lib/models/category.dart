@@ -13,8 +13,10 @@ class MoveCategory {
     MoveCategory('Combo'),
   ];
 
-  static MoveCategory fromJson(dynamic raw) =>
-      MoveCategory((raw as String?) ?? '');
+  static MoveCategory fromJson(dynamic raw) {
+    if (raw is Map) return MoveCategory((raw['name'] as String?) ?? '');
+    return MoveCategory((raw as String?) ?? '');
+  }
 
   Map<String, dynamic> toJson() => {'name': name};
 }

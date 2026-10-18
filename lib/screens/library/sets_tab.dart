@@ -4,11 +4,10 @@ import 'package:provider/provider.dart';
 import '../../components/index.dart';
 import '../../state/app_state.dart';
 import '../../theme/app_theme.dart';
-import '../sets/set_builder_screen.dart';
 import '../sets/set_detail_screen.dart';
 
-/// Sets half of the library tab: saved routine groups, with the build action
-/// on the tab's own row.
+/// Sets half of the library tab: saved routine groups. New sets are created
+/// from the library's shared add button, same as moves.
 class SetsTab extends StatelessWidget {
   const SetsTab({super.key});
 
@@ -21,23 +20,10 @@ class SetsTab extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 10, 12, 4),
-          child: Row(
-            children: [
-              Text(
-                sets.isEmpty ? 'No sets yet' : '${sets.length} saved',
-                style: context.appTextTheme.bodyMedium,
-              ),
-              const Spacer(),
-              BrkIconButton(
-                icon: Icons.add,
-                accent: true,
-                tooltip: 'New set',
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const SetBuilderScreen()),
-                ),
-              ),
-            ],
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 6),
+          child: Text(
+            sets.isEmpty ? 'No sets yet' : '${sets.length} saved',
+            style: context.appTextTheme.bodyMedium,
           ),
         ),
         Expanded(

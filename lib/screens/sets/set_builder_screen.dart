@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../components/index.dart';
+import '../../models/media.dart';
 import '../../models/move.dart';
 import '../../models/set.dart';
 import '../../state/app_state.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/media_actions.dart';
+import '../edit/media_picker.dart';
 import 'set_detail_screen.dart';
 
 /// Creates or reorders a set: name it, then tick moves from the vocabulary.
@@ -21,14 +24,17 @@ class SetBuilderScreen extends StatefulWidget {
 class _SetBuilderScreenState extends State<SetBuilderScreen> {
   late final TextEditingController _name;
   late List<String> _selected;
+  late List<MoveMedia> _media;
 
   bool get _isEdit => widget.existing != null;
 
   @override
   void initState() {
     super.initState();
-    _name = TextEditingController(text: widget.existing?.name ?? '');
-    _selected = [...?widget.existing?.moveIds];
+    final existing = widget.existing;
+    _name = TextEditingController(text: existing?.name ?? '');
+    _selected = [...?existing?.moveIds];
+    _media = [...?existing?.media];
   }
 
   @override
@@ -75,6 +81,27 @@ class _SetBuilderScreenState extends State<SetBuilderScreen> {
                   const SizedBox(height: 24),
                   Row(
                     children: [
+                      Text('Media', style: context.appTextTheme.titleMedium),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  for (var i = 0; i < _media.length; i++) ...[
+                    BrkMediaTile(
+                      media: _media[i],
+                      onOpen: () => openMedia(context, _media[i]),
+                      onRemove: () => setState(() => _media.removeAt(i)),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                  BrkButton(
+                    label: 'Attach media',
+                    variant: BrkButtonVariant.secondary,
+                    icon: Icons.attach_file,
+                    onPressed: _addMedia,
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
                       Text('Vocabulary',
                           style: context.appTextTheme.titleMedium),
                       const Spacer(),
@@ -109,14 +136,22 @@ class _SetBuilderScreenState extends State<SetBuilderScreen> {
 
   bool get _canSave => _name.text.trim().isNotEmpty && _selected.isNotEmpty;
 
+  Future<void> _addMedia() async {
+    final media = await pickBrkMedia(context);
+    if (media != null && mounted) setState(() => _media.add(media));
+  }
+
   Future<void> _save() async {
     if (!_canSave) return;
     final state = context.read<AppState>();
     final name = _name.text.trim();
 
     if (_isEdit) {
-      await state.sets.update(
-          widget.existing!.copyWith(name: name, moveIds: _selected));
+      await state.sets.update(widget.existing!.copyWith(
+        name: name,
+        moveIds: _selected,
+        media: _media,
+      ));
       if (mounted) Navigator.of(context).pop();
       return;
     }
@@ -128,6 +163,7 @@ class _SetBuilderScreenState extends State<SetBuilderScreen> {
       name: name,
       moveIds: _selected,
       createdAt: DateTime.now(),
+      media: _media,
     ));
     navigator.pop();
     navigator.push(
