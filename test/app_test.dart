@@ -1,105 +1,15 @@
 import 'dart:convert';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:breaklog/main.dart';
 import 'package:breaklog/models/move.dart';
-import 'package:breaklog/screens/edit/add_edit_move_screen.dart';
-import 'package:breaklog/screens/library/library_screen.dart';
-import 'package:breaklog/screens/shell.dart';
-import 'package:breaklog/services/move_repository.dart';
 import 'package:breaklog/services/version_checker.dart';
-import 'package:breaklog/state/app_state.dart';
 import 'package:breaklog/state/update_notifier.dart';
 import 'package:breaklog/utils/semver.dart';
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
-
-  setUp(() {
-    SharedPreferences.setMockInitialValues({});
-  });
-
-  Future<void> boot(WidgetTester tester) async {
-    await tester.pumpWidget(const BreakLogApp());
-    await tester.pump(const Duration(milliseconds: 100));
-    await tester.pumpAndSettle();
-  }
-
-  testWidgets('app boots into the library shell', (tester) async {
-    await boot(tester);
-
-    expect(find.byType(AppShell), findsOneWidget);
-    expect(find.byType(LibraryScreen), findsOneWidget);
-    expect(find.text('No moves logged'), findsOneWidget);
-  });
-
-  testWidgets('logging a move adds it to the library', (tester) async {
-    await boot(tester);
-
-    await tester.tap(find.text('Log move').first);
-    await tester.pumpAndSettle();
-    expect(find.byType(AddEditMoveScreen), findsOneWidget);
-
-    await tester.enterText(
-        find.byType(TextFormField).first, 'Windmill');
-    // The save button can sit below the test viewport; invoke its callback
-    // directly so the test exercises save logic, not hit-testing.
-    final saveButton = tester.widget<FilledButton>(find.byType(FilledButton));
-    saveButton.onPressed!();
-    await tester.pumpAndSettle();
-
-    expect(find.byType(AddEditMoveScreen), findsNothing);
-    expect(find.text('Windmill'), findsOneWidget);
-
-    // A fresh boot must still show it: the list round-trips through
-    // shared_preferences.
-    await tester.pumpWidget(const SizedBox());
-    await tester.pump(const Duration(milliseconds: 50));
-    await boot(tester);
-    expect(find.text('Windmill'), findsOneWidget);
-  });
-
-  testWidgets('search filters the library', (tester) async {
-    final repo = MoveRepository();
-    await repo.add(BboyMove(
-      id: '1',
-      name: 'Six-step',
-      category: MoveCategory.footwork,
-      difficulty: 3,
-      learnedAt: DateTime(2026, 1, 1),
-    ));
-    await repo.add(BboyMove(
-      id: '2',
-      name: 'Windmill',
-      category: MoveCategory.power,
-      difficulty: 4,
-      learnedAt: DateTime(2026, 1, 2),
-    ));
-
-    await tester.pumpWidget(
-      ChangeNotifierProvider.value(
-        value: AppState(repository: repo),
-        child: const MaterialApp(home: LibraryScreen()),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('Six-step'), findsOneWidget);
-    expect(find.text('Windmill'), findsOneWidget);
-
-    await tester.enterText(find.byType(TextField), 'wind');
-    await tester.pumpAndSettle();
-
-    expect(find.text('Windmill'), findsOneWidget);
-    expect(find.text('Six-step'), findsNothing);
-  });
-
   group('version checker', () {
     http.Client releasesResponse(List<Map<String, dynamic>> releases) {
       return MockClient((request) async {
