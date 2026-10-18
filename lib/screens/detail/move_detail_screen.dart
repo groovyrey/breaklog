@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -81,21 +82,53 @@ class MoveDetailScreen extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(20, 4, 20, 36),
                 children: [
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      BrkDifficultyTag(
-                        level: move.difficulty,
-                        label: move.difficultyLabel,
-                      ),
-                      _Pill(label: move.depth.label),
-                      _Pill(
-                        label:
-                            'Logged ${move.learnedAt.toLocal().toString().split(' ').first}',
-                      ),
-                    ],
+                  BrkCard(
+                    padding: const EdgeInsets.fromLTRB(16, 2, 16, 2),
+                    child: Column(
+                      children: [
+                        BrkRow(
+                          label: 'Category',
+                          value: move.category.isEmpty
+                              ? 'Uncategorized'
+                              : move.category,
+                        ),
+                        const Divider(height: 1),
+                        BrkRow(
+                          label: 'Difficulty',
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              BrkDifficultyDots(level: move.difficulty),
+                              const SizedBox(width: 10),
+                              Text(
+                                '${move.difficulty} / 5 · ${move.difficultyLabel}',
+                                style: context.appTextTheme.titleSmall
+                                    ?.copyWith(
+                                        color:
+                                            AppColors.difficulty(move.difficulty)),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Divider(height: 1),
+                        BrkRow(label: 'Depth', value: move.depth.label),
+                        const Divider(height: 1),
+                        BrkRow(
+                          label: 'Logged on',
+                          value: DateFormat.yMMMd()
+                              .add_jm()
+                              .format(move.learnedAt.toLocal()),
+                        ),
+                        const Divider(height: 1),
+                        BrkRow(
+                          label: 'Attachments',
+                          value: move.media.isEmpty
+                              ? 'None'
+                              : '${move.media.length} '
+                                  '${move.media.length == 1 ? 'file' : 'files'}',
+                        ),
+                      ],
+                    ),
                   ),
                   if (move.notes.isNotEmpty) ...[
                     const SizedBox(height: 26),
@@ -137,12 +170,18 @@ class MoveDetailScreen extends StatelessWidget {
   }
 
   void _openMedia(BuildContext context, MoveMedia media) {
-    if (media.kind == MediaKind.photo && !media.isRemote) {
-      showBrkImageViewer(context, media.value);
-      return;
-    }
     if (media.isRemote) {
       launchUrl(Uri.parse(media.value), mode: LaunchMode.externalApplication);
+      return;
+    }
+    switch (media.kind) {
+      case MediaKind.photo:
+        showBrkImageViewer(context, media.value);
+      case MediaKind.video:
+      case MediaKind.record:
+        showBrkVideoViewer(context, media.value);
+      case MediaKind.link:
+        break;
     }
   }
 
@@ -180,24 +219,5 @@ class MoveDetailScreen extends StatelessWidget {
     }
     await state.moves.remove(move.id);
     if (context.mounted) Navigator.of(context).pop();
-  }
-}
-
-class _Pill extends StatelessWidget {
-  const _Pill({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.chip),
-        border: Border.all(color: AppColors.outline),
-      ),
-      child: Text(label, style: context.appTextTheme.labelMedium),
-    );
   }
 }

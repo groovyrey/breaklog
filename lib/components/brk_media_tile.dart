@@ -34,9 +34,13 @@ class BrkMediaTile extends StatelessWidget {
     return parts.isEmpty ? media.value : parts.last;
   }
 
-  String get _subtitle => media.isRemote
-      ? '${media.kind.label} · opens in browser'
-      : '${media.kind.label} · saved on this device';
+  String get _subtitle {
+    if (media.isRemote) return '${media.kind.label} · opens in browser';
+    if (media.kind == MediaKind.video || media.kind == MediaKind.record) {
+      return '${media.kind.label} · tap to play';
+    }
+    return '${media.kind.label} · saved on this device';
+  }
 
   @override
   Widget build(BuildContext context) {

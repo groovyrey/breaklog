@@ -1,0 +1,211 @@
+import 'dart:io';
+
+import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
+
+import '../theme/app_theme.dart';
+
+/// Full-screen player for a local clip, matching the photo viewer chrome.
+Future<void> showBrkVideoViewer(BuildContext context, String path) {
+  return Navigator.of(context, rootNavigator: true).push<void>(
+    BrkVideoViewerRoute(path: path),
+  );
+}
+
+class BrkVideoViewerRoute extends PageRoute<void> {
+  BrkVideoViewerRoute({required this.path});
+
+  final String path;
+
+  @override
+  Color? get barrierColor => Colors.black;
+
+  @override
+  String? get barrierLabel => 'Close';
+
+  @override
+  bool get opaque => true;
+
+  @override
+  bool get maintainState => true;
+
+  @override
+  Duration get transitionDuration => const Duration(milliseconds: 160);
+
+  @override
+  Widget buildPage(BuildContext context, Animation<double> animation,
+      Animation<double> secondaryAnimation) {
+    return _BrkVideoViewer(path: path);
+  }
+}
+
+class _BrkVideoViewer extends StatefulWidget {
+  const _BrkVideoViewer({required this.path});
+
+  final String path;
+
+  @override
+  State<_BrkVideoViewer> createState() => _BrkVideoViewerState();
+}
+
+class _BrkVideoViewerState extends State<_BrkVideoViewer> {
+  late final VideoPlayerController _controller;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = VideoPlayerController.file(File(widget.path));
+    _init();
+  }
+
+  Future<void> _init() async {
+    try {
+      await _controller.initialize();
+      if (!mounted) return;
+      setState(() {});
+      await _controller.play();
+    } catch (_) {
+      if (mounted) setState(() => _error = 'This clip could not be opened.');
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _togglePlayback() {
+    setState(() {
+      _controller.value.isPlaying ? _controller.pause() : _controller.play();
+    });
+  }
+
+  String _time(Duration d) {
+    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return d.inHours > 0 ? '${d.inHours}:$m:$s' : '$m:$s';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ready = _error == null && _controller.value.isInitialized;
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (_error != null)
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text(
+                    _error!,
+                    textAlign: TextAlign.center,
+                    style: context.appTextTheme.bodyMedium
+                        ?.copyWith(color: AppColors.onSurfaceVariant),
+                  ),
+                ),
+              )
+            else if (!ready)
+              const Center(
+                child: CircularProgressIndicator(color: AppColors.accent),
+              )
+            else
+              GestureDetector(
+                onTap: _togglePlayback,
+                behavior: HitTestBehavior.opaque,
+                child: Center(
+                  child: AspectRatio(
+                    aspectRatio: _controller.value.aspectRatio,
+                    child: VideoPlayer(_controller),
+                  ),
+                ),
+              ),
+            if (ready)
+              Positioned(
+                left: 12,
+                right: 12,
+                bottom: 12,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(AppRadius.control),
+                    border: Border.all(color: AppColors.outline),
+                  ),
+                  child: Row(
+                    children: [
+                      GestureDetector(
+                        onTap: _togglePlayback,
+                        behavior: HitTestBehavior.opaque,
+                        child: Icon(
+                          _controller.value.isPlaying
+                              ? Icons.pause
+                              : Icons.play_arrow,
+                          size: 26,
+                          color: AppColors.accent,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        _time(_controller.value.position),
+                        style: context.appTextTheme.labelMedium
+                            ?.copyWith(color: AppColors.onSurface),
+                      ),
+                      Expanded(
+                        child: Slider(
+                          value: _controller.value.position.inMilliseconds
+                              .toDouble()
+                              .clamp(
+                                  0,
+                                  _controller.value.duration.inMilliseconds
+                                      .toDouble()),
+                          min: 0,
+                          max: _controller.value.duration.inMilliseconds
+                              .toDouble()
+                              .clamp(1, double.infinity),
+                          activeColor: AppColors.accent,
+                          inactiveColor: AppColors.surfaceVariant,
+                          onChanged: (v) => _controller
+                              .seekTo(Duration(milliseconds: v.round())),
+                        ),
+                      ),
+                      Text(
+                        _time(_controller.value.duration),
+                        style: context.appTextTheme.labelMedium
+                            ?.copyWith(color: AppColors.onSurfaceVariant),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            Positioned(
+              top: 8,
+              right: 8,
+              child: GestureDetector(
+                onTap: () => Navigator.of(context).maybePop(),
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  alignment: Alignment.center,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.surfaceVariant,
+                  ),
+                  child: const Icon(Icons.close,
+                      size: 20, color: AppColors.onSurface),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

@@ -104,16 +104,25 @@ class _AddEditMoveScreenState extends State<AddEditMoveScreen> {
                       ],
                     ),
                     const SizedBox(height: 24),
-                    BrkStepper(
-                      value: _difficulty,
-                      readOnlyLabels: const [
-                        'Beginner',
-                        'Getting it',
-                        'Clean',
-                        'Sharp',
-                        'Battle-ready',
+                    Row(
+                      children: [
+                        _label('Difficulty'),
+                        const Spacer(),
+                        Text(
+                          '${_difficulty} / 5 · ${BboyMove.labelFor(_difficulty)}',
+                          style: context.appTextTheme.titleSmall?.copyWith(
+                              color: AppColors.difficulty(_difficulty)),
+                        ),
                       ],
-                      onChanged: (v) => setState(() => _difficulty = v),
+                    ),
+                    Slider(
+                      value: _difficulty.toDouble(),
+                      min: 1,
+                      max: 5,
+                      divisions: 4,
+                      activeColor: AppColors.difficulty(_difficulty),
+                      inactiveColor: AppColors.surfaceVariant,
+                      onChanged: (v) => setState(() => _difficulty = v.round()),
                     ),
                     const SizedBox(height: 24),
                     _label('Depth'),
@@ -204,9 +213,10 @@ class _AddEditMoveScreenState extends State<AddEditMoveScreen> {
       );
 
   Future<void> _pickDate() async {
-    final picked = await pickBrkDate(
-      context,
-      initial: _learnedAt,
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _learnedAt,
+      firstDate: DateTime(2000),
       lastDate: DateTime.now(),
     );
     if (picked != null && mounted) setState(() => _learnedAt = picked);

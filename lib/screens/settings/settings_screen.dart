@@ -40,10 +40,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            BrkHeader(
+            const BrkHeader(
               title: 'Settings',
-              leading: Icons.arrow_back,
-              onLeading: () => Navigator.of(context).maybePop(),
             ),
             Expanded(
               child: ListView(
