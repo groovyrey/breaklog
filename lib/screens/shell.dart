@@ -30,25 +30,8 @@ class _AppShellState extends State<AppShell> {
       backgroundColor: AppColors.background,
       body: IndexedStack(index: _index, children: _tabs),
       bottomNavigationBar: NavigationBar(
-        backgroundColor: AppColors.surface,
-        indicatorColor: AppColors.accentSoft,
-        height: 68,
         selectedIndex: _index,
         onDestinationSelected: (i) => setState(() => _index = i),
-        iconTheme: WidgetStateProperty.resolveWith((states) {
-          final selected = states.contains(WidgetState.selected);
-          return IconThemeData(
-            color: selected ? AppColors.accent : AppColors.onSurfaceVariant,
-          );
-        }),
-        labelTextStyle: WidgetStateProperty.resolveWith((states) {
-          final selected = states.contains(WidgetState.selected);
-          return TextStyle(
-            fontSize: 11,
-            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-            color: selected ? AppColors.accent : AppColors.onSurfaceVariant,
-          );
-        }),
         destinations: [
           NavigationDestination(
             icon: Icon(state.hasUpdate

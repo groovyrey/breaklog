@@ -94,9 +94,15 @@ class BrkCard extends StatelessWidget {
   }
 }
 
-/// Two-line label/value row used on detail and settings screens.
+/// Two-line label/value row used on detail and settings screens. Pass either
+/// [value] or a [trailing] widget when the value needs custom color or marks.
 class BrkRow extends StatelessWidget {
-  const BrkRow({super.key, required this.label, required this.value, this.trailing});
+  const BrkRow({
+    super.key,
+    required this.label,
+    this.value = '',
+    this.trailing,
+  });
 
   final String label;
   final String value;
