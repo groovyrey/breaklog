@@ -19,7 +19,10 @@ class BrkDialogRoute<T> extends RawDialogRoute<T> {
     required WidgetBuilder builder,
     super.barrierDismissible,
   }) : super(
-          pageBuilder: (context, _, __) => builder(context),
+          pageBuilder: (context, _, __) => Align(
+            alignment: Alignment.center,
+            child: builder(context),
+          ),
           barrierLabel: 'Dismiss',
           barrierColor: Colors.black54,
           transitionDuration: const Duration(milliseconds: 180),
@@ -55,6 +58,9 @@ class BrkDialog extends StatelessWidget {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 28),
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.8,
+      ),
       padding: const EdgeInsets.fromLTRB(22, 22, 22, 20),
       decoration: BoxDecoration(
         color: AppColors.surfaceVariant,
@@ -70,15 +76,19 @@ class BrkDialog extends StatelessWidget {
             style: context.appTextTheme.labelSmall
                 ?.copyWith(color: AppColors.accent),
           ),
-          const SizedBox(height: 14),
-          child,
+          Flexible(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.only(top: 20),
+              child: child,
+            ),
+          ),
           if (actions.isNotEmpty) ...[
-            const SizedBox(height: 22),
+            const SizedBox(height: 20),
             Row(
               children: [
                 for (var i = 0; i < actions.length; i++) ...[
                   if (i > 0) const SizedBox(width: 10),
-                  Expanded(child: actions[i]),
+                  Flexible(child: actions[i]),
                 ],
               ],
             ),

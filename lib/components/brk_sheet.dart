@@ -121,10 +121,9 @@ class BrkSheet extends StatelessWidget {
               ),
             ),
             Flexible(
-              // shrinkWrap keeps the sheet sized to its content instead of
-              // filling the max height; the viewport still scrolls past it.
+              // Loose flex: the viewport is bounded by the sheet's max height
+              // but still sizes to its content, so short sheets stay short.
               child: SingleChildScrollView(
-                shrinkWrap: true,
                 padding: const EdgeInsets.fromLTRB(16, 6, 16, 20),
                 child: child,
               ),
