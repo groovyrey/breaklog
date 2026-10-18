@@ -1,0 +1,264 @@
+import 'dart:convert';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:breaklog/main.dart';
+import 'package:breaklog/models/move.dart';
+import 'package:breaklog/screens/edit/add_edit_move_screen.dart';
+import 'package:breaklog/screens/library/library_screen.dart';
+import 'package:breaklog/screens/shell.dart';
+import 'package:breaklog/services/move_repository.dart';
+import 'package:breaklog/services/version_checker.dart';
+import 'package:breaklog/state/app_state.dart';
+import 'package:breaklog/state/update_notifier.dart';
+import 'package:breaklog/utils/semver.dart';
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
+  Future<void> boot(WidgetTester tester) async {
+    await tester.pumpWidget(const BreakLogApp());
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('app boots into the library shell', (tester) async {
+    await boot(tester);
+
+    expect(find.byType(AppShell), findsOneWidget);
+    expect(find.byType(LibraryScreen), findsOneWidget);
+    expect(find.text('No moves logged'), findsOneWidget);
+  });
+
+  testWidgets('logging a move adds it to the library', (tester) async {
+    await boot(tester);
+
+    await tester.tap(find.text('Log move').first);
+    await tester.pumpAndSettle();
+    expect(find.byType(AddEditMoveScreen), findsOneWidget);
+
+    await tester.enterText(
+        find.byType(TextFormField).first, 'Windmill');
+    await tester.tap(find.text('Log move').last);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(LibraryScreen), findsOneWidget);
+    expect(find.text('Windmill'), findsOneWidget);
+
+    // A fresh boot must still show it: the list round-trips through
+    // shared_preferences.
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 50));
+    await boot(tester);
+    expect(find.text('Windmill'), findsOneWidget);
+  });
+
+  testWidgets('search filters the library', (tester) async {
+    final repo = MoveRepository();
+    await repo.add(BboyMove(
+      id: '1',
+      name: 'Six-step',
+      category: MoveCategory.footwork,
+      difficulty: 3,
+      learnedAt: DateTime(2026, 1, 1),
+    ));
+    await repo.add(BboyMove(
+      id: '2',
+      name: 'Windmill',
+      category: MoveCategory.power,
+      difficulty: 4,
+      learnedAt: DateTime(2026, 1, 2),
+    ));
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: AppState(repository: repo),
+        child: const MaterialApp(home: LibraryScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Six-step'), findsOneWidget);
+    expect(find.text('Windmill'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField), 'wind');
+    await tester.pumpAndSettle();
+
+    expect(find.text('Windmill'), findsOneWidget);
+    expect(find.text('Six-step'), findsNothing);
+  });
+
+  group('version checker', () {
+    http.Client releasesResponse(List<Map<String, dynamic>> releases) {
+      return MockClient((request) async {
+        expect(request.url.path, contains('/repos/groovyrey/breaklog/releases'));
+        return http.Response(
+          '[${releases.map((r) => jsonEncode(r)).join(',')}]',
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      });
+    }
+
+    test('announces the newest stable release', () async {
+      final checker = VersionChecker(client: releasesResponse([
+        {
+          'tag_name': 'v1.0.0',
+          'prerelease': false,
+          'draft': false,
+          'html_url': 'https://example.com/v1.0.0',
+          'published_at': '2026-10-04T01:37:04Z',
+        },
+      ]));
+      final latest = await checker.latest(includePrerelease: false);
+      expect(latest, isNotNull);
+      expect(latest!.version, '1.0.0');
+    });
+
+    test('skips the prerelease on the stable channel', () async {
+      final checker = VersionChecker(client: releasesResponse([
+        {
+          'tag_name': 'v2.0.0-beta.1',
+          'prerelease': true,
+          'draft': false,
+          'html_url': 'https://example.com/beta',
+          'published_at': '2026-10-05T01:45:00Z',
+        },
+        {
+          'tag_name': 'v1.0.0',
+          'prerelease': false,
+          'draft': false,
+          'html_url': 'https://example.com/stable',
+          'published_at': '2026-10-04T01:37:04Z',
+        },
+      ]));
+      expect((await checker.latest())!.version, '1.0.0');
+      expect((await checker.latest(includePrerelease: true))!.version,
+          '2.0.0-beta.1');
+    });
+
+    test('recovers the rolling beta version from its asset name', () async {
+      final checker = VersionChecker(client: releasesResponse([
+        {
+          'tag_name': 'beta',
+          'prerelease': true,
+          'draft': false,
+          'html_url': 'https://example.com/beta',
+          'published_at': '2026-10-02T01:45:00Z',
+          'assets': [
+            {
+              'name': 'BreakLog-1.3.0-beta.apk',
+              'browser_download_url': 'https://example.com/beta.apk',
+              'size': 1,
+              'download_count': 0,
+              'updated_at': '2026-10-06T03:14:15Z',
+            },
+          ],
+        },
+      ]));
+      final beta = (await checker.latest(includePrerelease: true))!;
+      expect(beta.version, '1.3.0-beta');
+    });
+  });
+
+  group('update notifier', () {
+    UpdateNotifier notifierWith(List<Map<String, dynamic>> releases) =>
+        UpdateNotifier(
+          checker: VersionChecker(client: MockClient((_) async {
+            return http.Response(
+              '[${releases.map((r) => jsonEncode(r)).join(',')}]',
+              200,
+              headers: {'content-type': 'application/json'},
+            );
+          })),
+          installedVersion: '1.0.0',
+        );
+
+    test('flags a pending release newer than the installed build', () async {
+      final notifier = notifierWith([
+        {
+          'tag_name': 'v9.0.0',
+          'prerelease': false,
+          'draft': false,
+          'html_url': 'https://example.com/v9.0.0',
+          'published_at': '2026-10-05T10:00:00Z',
+        },
+      ]);
+      await notifier.check(includePrerelease: false, enabled: true);
+      expect(notifier.hasUpdateOn(false), isTrue);
+    });
+
+    test('the installed build itself is not pending', () async {
+      final notifier = notifierWith([
+        {
+          'tag_name': 'v1.0.0',
+          'prerelease': false,
+          'draft': false,
+          'html_url': 'https://example.com/v1.0.0',
+          'published_at': '2026-10-04T15:04:14Z',
+        },
+      ]);
+      await notifier.check(includePrerelease: false, enabled: true);
+      expect(notifier.hasUpdateOn(false), isFalse);
+    });
+  });
+
+  group('semver', () {
+    test('orders core components numerically', () {
+      expect(SemVer('v1.10.0') > SemVer('1.9.9'), isTrue);
+      expect(SemVer('1.1.0') < SemVer('1.1.1'), isTrue);
+    });
+
+    test('ranks a stable tag above its prereleases', () {
+      expect(SemVer('1.1.0') > SemVer('1.1.0-beta.1'), isTrue);
+      expect(SemVer('1.3.0-beta') > SemVer('1.2.0'), isTrue);
+    });
+
+    test('strips the v prefix and build metadata for display', () {
+      expect(SemVer('v1.1.0+17').label, '1.1.0');
+      expect(SemVer('1.1.0').isPreRelease, isFalse);
+    });
+  });
+
+  group('move model', () {
+    test('round-trips through JSON', () {
+      final move = BboyMove(
+        id: '42',
+        name: 'Airflare',
+        category: MoveCategory.power,
+        difficulty: 5,
+        notes: 'Two revolutions',
+        videoUrl: 'https://example.com/airflare',
+        learnedAt: DateTime.utc(2026, 10, 1),
+        favorite: true,
+      );
+      final back = BboyMove.fromJson(jsonDecode(jsonEncode(move.toJson())));
+      expect(back.id, move.id);
+      expect(back.name, move.name);
+      expect(back.category, MoveCategory.power);
+      expect(back.difficulty, 5);
+      expect(back.favorite, isTrue);
+      expect(back.learnedAt, move.learnedAt);
+    });
+
+    test('clamps difficulty into the 1 to 5 range', () {
+      final move = BboyMove.fromJson({
+        'id': '1',
+        'name': 'Bad data',
+        'category': 'nope',
+        'difficulty': 99,
+      });
+      expect(move.difficulty, 5);
+      expect(move.category, MoveCategory.footwork);
+    });
+  });
+}
