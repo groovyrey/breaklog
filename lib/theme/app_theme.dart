@@ -18,6 +18,23 @@ class AppColors {
   static const Color accent = Color(0xFFE53935);
   static const Color onAccent = Color(0xFFFFFFFF);
   static const Color accentSoft = Color(0xFF2A0E0C);
+
+  /// Cold-to-hot ramp for difficulty 1..5. Level 5 lands on [accent] so the
+  /// hardest moves read as the brand signal, level 1 stays quiet steel.
+  static Color difficulty(int level) {
+    final normalized = level < 1 ? 1 : (level > 5 ? 5 : level);
+    return switch (normalized) {
+      1 => const Color(0xFF8FA6BF),
+      2 => const Color(0xFFC4A857),
+      3 => const Color(0xFFE5A33B),
+      4 => const Color(0xFFE5673B),
+      _ => accent,
+    };
+  }
+
+  /// Tint used behind a difficulty value; same ramp, darkened for surfaces.
+  static Color difficultySoft(int level) =>
+      difficulty(level).withValues(alpha: 0.16);
 }
 
 class AppRadius {
@@ -69,39 +86,9 @@ ThemeData buildDarkTheme() {
 }
 
 ThemeData _applyComponentThemes(ThemeData theme) {
+  // Every control the app draws itself (buttons, sheets, dialogs, tabs,
+  // switches, steppers), so no Material component themes are configured here.
   return theme.copyWith(
-    appBarTheme: AppBarTheme(
-      backgroundColor: AppColors.background,
-      elevation: 0,
-      scrolledUnderElevation: 0,
-      foregroundColor: AppColors.onSurface,
-      iconTheme: IconThemeData(color: AppColors.onSurfaceVariant),
-    ),
-    filledButtonTheme: FilledButtonThemeData(
-      style: FilledButton.styleFrom(
-        backgroundColor: AppColors.accent,
-        foregroundColor: AppColors.onAccent,
-        textStyle: const TextStyle(fontWeight: FontWeight.w700),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.field),
-        ),
-      ),
-    ),
-    textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(
-        foregroundColor: AppColors.accent,
-        textStyle: const TextStyle(fontWeight: FontWeight.w700),
-      ),
-    ),
-    outlinedButtonTheme: OutlinedButtonThemeData(
-      style: OutlinedButton.styleFrom(
-        foregroundColor: AppColors.accent,
-        side: const BorderSide(color: AppColors.outline),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.field),
-        ),
-      ),
-    ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: AppColors.surface,
@@ -119,34 +106,6 @@ ThemeData _applyComponentThemes(ThemeData theme) {
         borderSide: const BorderSide(color: AppColors.accent),
       ),
     ),
-    navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: AppColors.surface,
-      indicatorColor: AppColors.accentSoft,
-      height: 68,
-      iconTheme: WidgetStateProperty.resolveWith((states) {
-        final selected = states.contains(WidgetState.selected);
-        return IconThemeData(
-          color: selected ? AppColors.accent : AppColors.onSurfaceVariant,
-        );
-      }),
-      labelTextStyle: WidgetStateProperty.resolveWith((states) {
-        final selected = states.contains(WidgetState.selected);
-        return TextStyle(
-          fontSize: 11,
-          fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-          color: selected ? AppColors.accent : AppColors.onSurfaceVariant,
-        );
-      }),
-    ),
-    snackBarTheme: SnackBarThemeData(
-      backgroundColor: AppColors.surfaceVariant,
-      contentTextStyle: const TextStyle(color: AppColors.onSurface),
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.field),
-      ),
-    ),
-    dividerTheme: const DividerThemeData(color: AppColors.outline, thickness: 1),
   );
 }
 

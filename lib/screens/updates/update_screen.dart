@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../components/index.dart';
 import '../../services/version_checker.dart';
 import '../../state/app_state.dart';
 import '../../theme/app_theme.dart';
@@ -16,42 +17,54 @@ class UpdateScreen extends StatelessWidget {
     final updates = state.updateNotifier;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Updates', style: context.appTextTheme.headlineSmall),
-      ),
-      body: FutureBuilder<List<ReleaseInfo>>(
-        future: updates.checker
-            .releases(includePrerelease: state.betaChannel),
-        builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final releases = snap.data ?? const <ReleaseInfo>[];
-          final installed = updates.installed;
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-            children: [
-              Text(
-                installed.isEmpty
-                    ? 'Installed version unknown'
-                    : 'Installed: $installed',
-                style: context.appTextTheme.bodyMedium,
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Column(
+          children: [
+            BrkHeader(
+              title: 'Updates',
+              leading: Icons.arrow_back,
+              onLeading: () => Navigator.of(context).maybePop(),
+            ),
+            Expanded(
+              child: FutureBuilder<List<ReleaseInfo>>(
+                future: updates.checker
+                    .releases(includePrerelease: state.betaChannel),
+                builder: (context, snap) {
+                  if (snap.connectionState != ConnectionState.done) {
+                    return const Center(
+                        child: BrkSpinner(color: AppColors.accent));
+                  }
+                  final releases = snap.data ?? const <ReleaseInfo>[];
+                  final installed = updates.installed;
+                  return ListView(
+                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 36),
+                    children: [
+                      Text(
+                        installed.isEmpty
+                            ? 'Installed version unknown'
+                            : 'Installed: $installed',
+                        style: context.appTextTheme.bodyMedium,
+                      ),
+                      const SizedBox(height: 16),
+                      if (releases.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 24),
+                          child: Text('No releases found yet.',
+                              style: context.appTextTheme.bodyMedium),
+                        ),
+                      for (final r in releases)
+                        _ReleaseCard(
+                          release: r,
+                          installedVersion: installed,
+                        ),
+                    ],
+                  );
+                },
               ),
-              const SizedBox(height: 16),
-              if (releases.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 24),
-                  child: Text('No releases found yet.',
-                      style: context.appTextTheme.bodyMedium),
-                ),
-              for (final r in releases)
-                _ReleaseCard(
-                  release: r,
-                  installedVersion: installed,
-                ),
-            ],
-          );
-        },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -111,13 +124,15 @@ class _ReleaseCard extends StatelessWidget {
             Text(notes, style: context.appTextTheme.bodyMedium),
           ],
           const SizedBox(height: 12),
-          TextButton.icon(
+          BrkButton(
+            label: 'Open release',
+            variant: BrkButtonVariant.ghost,
+            icon: Icons.open_in_new,
+            expand: false,
             onPressed: () => launchUrl(
               Uri.parse(release.url),
               mode: LaunchMode.externalApplication,
             ),
-            icon: const Icon(Icons.open_in_new, size: 18),
-            label: const Text('Open release'),
           ),
         ],
       ),

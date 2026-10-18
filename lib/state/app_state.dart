@@ -1,17 +1,41 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../services/category_repository.dart';
 import '../services/move_repository.dart';
+import '../services/set_repository.dart';
 import 'update_notifier.dart';
 
-/// App-wide composition root: the move library, update checks, and the
-/// settings that gate them. Screens read through this provider.
+/// App-wide composition root.
+///
+/// Widgets watch this one object. Every repository below re-emits through
+/// [notifyListeners], so a favorite toggle in one screen refreshes every other
+/// screen that reads app state.
 class AppState extends ChangeNotifier {
-  AppState({MoveRepository? repository, UpdateNotifier? updates})
-      : moves = repository ?? MoveRepository(),
-        updateNotifier = updates ?? UpdateNotifier();
+  AppState({
+    MoveRepository? moves,
+    CategoryRepository? categories,
+    SetRepository? sets,
+    UpdateNotifier? updates,
+  })  : moves = moves ?? MoveRepository(),
+        categories = categories ?? CategoryRepository(),
+        sets = sets ?? SetRepository(),
+        updateNotifier = updates ?? UpdateNotifier() {
+    // Re-broadcast repository changes so a single watch(AppState) rebuilds
+    // any screen that reads any repository.
+    for (final repo in <Listenable>[
+      this.moves,
+      this.categories,
+      this.sets,
+      this.updateNotifier,
+    ]) {
+      repo.addListener(notifyListeners);
+    }
+  }
 
   final MoveRepository moves;
+  final CategoryRepository categories;
+  final SetRepository sets;
   final UpdateNotifier updateNotifier;
 
   static const _betaKey = 'breaklog_beta_channel';
@@ -29,10 +53,13 @@ class AppState extends ChangeNotifier {
     if (_inited) return;
     final prefs = await SharedPreferences.getInstance();
     _betaChannel = prefs.getBool(_betaKey) ?? false;
-    await moves.load();
+    await Future.wait([
+      moves.load(),
+      categories.load(),
+      sets.load(),
+    ]);
     _inited = true;
     notifyListeners();
-    // Fire and forget: a failed check must not block the app shell.
     unawaitedCheck();
   }
 
@@ -44,8 +71,7 @@ class AppState extends ChangeNotifier {
     await checkForUpdates();
   }
 
-  Future<void> checkForUpdates({bool force = false}) =>
-      updateNotifier.check(
+  Future<void> checkForUpdates({bool force = false}) => updateNotifier.check(
         includePrerelease: _betaChannel,
         enabled: true,
         force: force,

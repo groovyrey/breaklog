@@ -1,28 +1,19 @@
-import 'package:flutter/material.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'media.dart';
 
-enum MoveCategory {
-  toprock('Toprock'),
-  footwork('Footwork'),
-  power('Power'),
-  freeze('Freeze'),
-  combo('Combo');
+/// How a move relates to the standard.
+enum MoveDepth {
+  universal('Universal'),
+  myVersion('My version'),
+  myCreation('My creation');
 
-  const MoveCategory(this.label);
+  const MoveDepth(this.label);
 
   final String label;
 
-  static MoveCategory fromName(String name) =>
-      MoveCategory.values.firstWhere((c) => c.name == name,
-          orElse: () => MoveCategory.footwork);
-
-  IconData get icon => switch (this) {
-        MoveCategory.toprock => PhosphorIconsRegular.shuffle,
-        MoveCategory.footwork => PhosphorIconsRegular.steps,
-        MoveCategory.power => PhosphorIconsRegular.hurricane,
-        MoveCategory.freeze => PhosphorIconsRegular.snowflake,
-        MoveCategory.combo => PhosphorIconsRegular.linkSimple,
-      };
+  static MoveDepth fromName(String? name) => MoveDepth.values.firstWhere(
+        (d) d.name == name,
+        orElse: () => MoveDepth.universal,
+      );
 }
 
 class BboyMove {
@@ -32,51 +23,81 @@ class BboyMove {
     required this.category,
     required this.difficulty,
     required this.learnedAt,
+    this.depth = MoveDepth.universal,
     this.notes = '',
-    this.videoUrl = '',
+    this.media = const [],
     this.favorite = false,
   });
 
   final String id;
   final String name;
-  final MoveCategory category;
+
+  /// Category name; resolved against the category store so user-created
+  /// categories stay valid even after this model is serialized alone.
+  final String category;
 
   /// 1 (beginner) to 5 (battle-ready).
   final int difficulty;
+
+  final MoveDepth depth;
   final String notes;
-  final String videoUrl;
+  final List<MoveMedia> media;
   final DateTime learnedAt;
   final bool favorite;
 
-  factory BboyMove.fromJson(Map<String, dynamic> json) => BboyMove(
-        id: json['id'] as String,
-        name: json['name'] as String,
-        category: MoveCategory.fromName(json['category'] as String? ?? ''),
-        difficulty: ((json['difficulty'] as num?)?.clamp(1, 5) ?? 1).toInt(),
-        notes: json['notes'] as String? ?? '',
-        videoUrl: json['videoUrl'] as String? ?? '',
-        learnedAt: DateTime.tryParse(json['learnedAt'] as String? ?? '') ??
-            DateTime.now(),
-        favorite: json['favorite'] as bool? ?? false,
-      );
+  factory BboyMove.fromJson(Map<String, dynamic> json) {
+    final rawMedia = json['media'];
+    var media = <MoveMedia>[];
+    if (rawMedia is List) {
+      media = rawMedia
+          .whereType<Map<String, dynamic>>()
+          .map(MoveMedia.fromJson)
+          .toList();
+    } else if (json['videoUrl'] is String &&
+        (json['videoUrl'] as String).isNotEmpty) {
+      // Pre-media builds stored a single video URL.
+      media = [
+        MoveMedia(
+          id: 'legacy',
+          kind: MediaKind.video,
+          value: json['videoUrl'] as String,
+        ),
+      ];
+    }
+
+    return BboyMove(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      category: (json['category'] as String?) ?? '',
+      difficulty: ((json['difficulty'] as num?)?.clamp(1, 5) ?? 1).toInt(),
+      depth: MoveDepth.fromName(json['depth'] as String?),
+      notes: json['notes'] as String? ?? '',
+      media: media,
+      learnedAt: DateTime.tryParse(json['learnedAt'] as String? ?? '') ??
+          DateTime.now(),
+      favorite: json['favorite'] as bool? ?? false,
+    );
+  }
 
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,
-        'category': category.name,
+        'category': category,
         'difficulty': difficulty,
+        'depth': depth.name,
         'notes': notes,
-        'videoUrl': videoUrl,
+        'media': media.map((m) => m.toJson()).toList(),
         'learnedAt': learnedAt.toIso8601String(),
         'favorite': favorite,
       };
 
   BboyMove copyWith({
     String? name,
-    MoveCategory? category,
+    String? category,
     int? difficulty,
+    MoveDepth? depth,
     String? notes,
-    String? videoUrl,
+    List<MoveMedia>? media,
     DateTime? learnedAt,
     bool? favorite,
   }) =>
@@ -85,13 +106,16 @@ class BboyMove {
         name: name ?? this.name,
         category: category ?? this.category,
         difficulty: difficulty ?? this.difficulty,
+        depth: depth ?? this.depth,
         notes: notes ?? this.notes,
-        videoUrl: videoUrl ?? this.videoUrl,
+        media: media ?? this.media,
         learnedAt: learnedAt ?? this.learnedAt,
         favorite: favorite ?? this.favorite,
       );
 
-  String get difficultyLabel => switch (difficulty) {
+  String get difficultyLabel => labelFor(difficulty);
+
+  static String labelFor(int difficulty) => switch (difficulty) {
         1 => 'Beginner',
         2 => 'Getting it',
         3 => 'Clean',

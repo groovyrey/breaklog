@@ -8,7 +8,8 @@ import '../models/move.dart';
 /// Owns the move list and persists it as JSON in shared_preferences.
 ///
 /// One source of truth: every screen reads through this instance and calls
-/// mutations here, which serialize the full list back to storage.
+/// mutations here. [AppState] re-emits these notifications so widgets that
+/// watch the app root rebuild on every add, edit, favorite, or delete.
 class MoveRepository extends ChangeNotifier {
   static const _storageKey = 'breaklog_moves_v1';
 
@@ -46,9 +47,7 @@ class MoveRepository extends ChangeNotifier {
   }
 
   Future<void> update(BboyMove move) async {
-    _moves = [_moves.where((m) => m.id == move.id).firstOrNull ?? move]
-        .followedBy(_moves.where((m) => m.id != move.id))
-        .toList();
+    _moves = _moves.map((m) => m.id == move.id ? move : m).toList();
     notifyListeners();
     await _persist();
   }
@@ -69,10 +68,12 @@ class MoveRepository extends ChangeNotifier {
 
   BboyMove? byId(String id) => _moves.where((m) => m.id == id).firstOrNull;
 
-  List<BboyMove> query({String search = '', MoveCategory? category}) {
+  /// Always returns a fresh, growable list sorted newest-first so callers can
+  /// sort or filter without touching the unmodifiable backing view.
+  List<BboyMove> query({String search = '', String? category}) {
     final needle = search.trim().toLowerCase();
-    var result = _moves;
-    if (category != null) {
+    var result = _moves.toList();
+    if (category != null && category.isNotEmpty) {
       result = result.where((m) => m.category == category).toList();
     }
     if (needle.isNotEmpty) {
@@ -82,14 +83,22 @@ class MoveRepository extends ChangeNotifier {
               m.notes.toLowerCase().contains(needle))
           .toList();
     }
-    return result.toList()
-      ..sort((a, b) => b.learnedAt.compareTo(a.learnedAt));
+    return result..sort((a, b) => b.learnedAt.compareTo(a.learnedAt));
   }
 
-  Map<MoveCategory, int> countsByCategory() {
-    final counts = {for (final c in MoveCategory.values) c: 0};
+  Map<String, int> countsByCategory() {
+    final counts = <String, int>{};
     for (final m in _moves) {
-      counts[m.category] = (counts[m.category] ?? 0) + 1;
+      final key = m.category.isEmpty ? 'Uncategorised' : m.category;
+      counts[key] = (counts[key] ?? 0) + 1;
+    }
+    return counts;
+  }
+
+  Map<MoveDepth, int> countsByDepth() {
+    final counts = {for (final d in MoveDepth.values) d: 0};
+    for (final m in _moves) {
+      counts[m.depth] = (counts[m.depth] ?? 0) + 1;
     }
     return counts;
   }

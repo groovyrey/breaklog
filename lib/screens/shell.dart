@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
-import '../screens/library/library_screen.dart';
-import '../screens/settings/settings_screen.dart';
-import '../screens/stats/stats_screen.dart';
-import '../state/app_state.dart';
-import '../theme/app_theme.dart';
+import '../components/index.dart';
+import 'edit/add_edit_move_screen.dart';
+import 'sets/sets_screen.dart';
+import 'vocabulary/vocabulary_screen.dart';
 
+/// Two-tab home. The floating control is a bare icon that only opens the add
+/// action sheet, so the sheet decides what "add" means.
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
 
@@ -18,41 +18,61 @@ class _AppShellState extends State<AppShell> {
   int _index = 0;
 
   static const _tabs = [
-    LibraryScreen(),
-    StatsScreen(),
-    SettingsScreen(),
+    VocabularyScreen(),
+    SetsScreen(),
   ];
+
+  Future<void> _openAddSheet() async {
+    final choice = await showBrkSheet<String>(
+      context: context,
+      builder: (ctx) => BrkSheet(
+        title: 'Add',
+        child: BrkSheetOptions(
+          children: [
+            BrkOptionTile(
+              title: 'Add move',
+              subtitle: 'Log a move into your vocabulary',
+              icon: Icons.add_circle_outline,
+              onTap: () => Navigator.of(ctx).pop('move'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (choice == 'move' && mounted) {
+      await Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const AddEditMoveScreen()),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final state = context.watch<AppState>();
     return Scaffold(
+      backgroundColor: AppColors.background,
       body: IndexedStack(index: _index, children: _tabs),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
-        destinations: [
-          NavigationDestination(
-            icon: Icon(state.hasUpdate
-                ? Icons.upload_rounded
-                : Icons.style_outlined),
-            selectedIcon: const Icon(Icons.style),
-            label: 'Library',
+      floatingActionButton: _index == 0
+          ? BrkFab(
+              icon: Icons.add,
+              tooltip: 'Add',
+              onTap: _openAddSheet,
+            )
+          : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      bottomNavigationBar: BrkTabBar(
+        currentIndex: _index,
+        onChanged: (i) => setState(() => _index = i),
+        tabs: const [
+          (
+            icon: Icons.menu_book_outlined,
+            selectedIcon: Icons.menu_book,
+            label: 'Vocabulary',
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.bar_chart_outlined),
-            selectedIcon: Icon(Icons.bar_chart),
-            label: 'Stats',
-          ),
-          NavigationDestination(
-            icon: Badge(
-              isLabelVisible: state.hasUpdate,
-              backgroundColor: AppColors.accent,
-              smallSize: 7,
-              child: const Icon(Icons.settings_outlined),
-            ),
-            selectedIcon: const Icon(Icons.settings),
-            label: 'Settings',
+          (
+            icon: Icons.queue_music_outlined,
+            selectedIcon: Icons.queue_music,
+            label: 'Sets',
           ),
         ],
       ),
