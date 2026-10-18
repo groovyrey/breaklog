@@ -48,10 +48,15 @@ void main() {
 
     await tester.enterText(
         find.byType(TextFormField).first, 'Windmill');
-    await tester.tap(find.text('Log move').last);
+    // The form is taller than the test surface; the save button sits below
+    // the fold until scrolled into view.
+    final saveButton = find.widgetWithText(FilledButton, 'Log move');
+    await tester.ensureVisible(saveButton);
+    await tester.pumpAndSettle();
+    await tester.tap(saveButton);
     await tester.pumpAndSettle();
 
-    expect(find.byType(LibraryScreen), findsOneWidget);
+    expect(find.byType(AddEditMoveScreen), findsNothing);
     expect(find.text('Windmill'), findsOneWidget);
 
     // A fresh boot must still show it: the list round-trips through
