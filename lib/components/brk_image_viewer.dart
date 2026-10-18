@@ -27,6 +27,9 @@ class BrkImageViewerRoute extends PageRoute<void> {
   bool get opaque => true;
 
   @override
+  bool get maintainState => true;
+
+  @override
   Duration get transitionDuration => const Duration(milliseconds: 160);
 
   @override

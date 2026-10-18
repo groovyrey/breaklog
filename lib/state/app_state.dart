@@ -27,7 +27,7 @@ class AppState extends ChangeNotifier {
       this.moves,
       this.categories,
       this.sets,
-      this.updateNotifier,
+      updateNotifier,
     ]) {
       repo.addListener(notifyListeners);
     }

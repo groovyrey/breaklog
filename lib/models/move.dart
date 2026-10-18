@@ -11,7 +11,7 @@ enum MoveDepth {
   final String label;
 
   static MoveDepth fromName(String? name) => MoveDepth.values.firstWhere(
-        (d) d.name == name,
+        (d) => d.name == name,
         orElse: () => MoveDepth.universal,
       );
 }

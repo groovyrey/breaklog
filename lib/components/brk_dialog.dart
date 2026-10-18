@@ -17,12 +17,11 @@ Future<T?> showBrkDialog<T>({
 class BrkDialogRoute<T> extends RawDialogRoute<T> {
   BrkDialogRoute({
     required WidgetBuilder builder,
-    required bool barrierDismissible,
+    super.barrierDismissible,
   }) : super(
           pageBuilder: (context, _, __) => builder(context),
-          barrierDismissible: barrierDismissible,
           barrierLabel: 'Dismiss',
-          barrierColor: Colors.black64,
+          barrierColor: Colors.black54,
           transitionDuration: const Duration(milliseconds: 180),
           transitionBuilder: (context, animation, secondaryAnimation, child) {
             final curved =

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../components/index.dart';
+import '../theme/app_theme.dart';
 import 'edit/add_edit_move_screen.dart';
 import 'sets/sets_screen.dart';
 import 'vocabulary/vocabulary_screen.dart';
