@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:video_player_media_kit/video_player_media_kit.dart';
 
 import 'app_root.dart';
 import 'state/app_state.dart';
@@ -8,6 +9,9 @@ import 'theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Route every video_player call through libmpv so playback does not depend on
+  // the device decoder. Must run before the first VideoPlayerController.
+  VideoPlayerMediaKit.ensureInitialized(android: true);
   try {
     await Firebase.initializeApp();
   } on Exception {
