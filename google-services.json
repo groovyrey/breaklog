@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "505222658699",
+    "project_id": "breaklog-de587",
+    "storage_bucket": "breaklog-de587.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:505222658699:android:d5d00a01f804cd6f31728e",
+        "android_client_info": {
+          "package_name": "com.groovyrey.breaklog"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDxUTGIfsIXuTm_0c0zZdJSO0giu4MNF9k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
