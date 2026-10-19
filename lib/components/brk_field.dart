@@ -60,7 +60,12 @@ class BrkField extends StatelessWidget {
           ),
           decoration: InputDecoration(
             hintText: hint,
-            suffixIcon: suffix,
+            suffixIcon: suffix == null
+                ? null
+                : Padding(
+                    padding: const EdgeInsets.only(right: 14),
+                    child: suffix,
+                  ),
             suffixIconConstraints:
                 const BoxConstraints(minHeight: 0, minWidth: 0),
             filled: true,

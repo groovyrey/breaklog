@@ -38,6 +38,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       state.aliasPending
           ? 'Saved here. Your account catches up next sign in.'
           : 'Alias saved to your account',
+      icon: state.aliasPending
+          ? Icons.cloud_off_outlined
+          : Icons.check_circle_outline,
     );
   }
 
@@ -45,7 +48,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final navigator = Navigator.of(context);
     await context.read<AppState>().auth.signOut();
     if (!mounted) return;
-    showBrkToast(context, 'Signed out');
+    showBrkToast(context, 'Signed out', icon: Icons.logout);
     navigator.popUntil((route) => route.isFirst);
   }
 

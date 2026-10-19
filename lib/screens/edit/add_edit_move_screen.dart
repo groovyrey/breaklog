@@ -291,7 +291,11 @@ class _AddEditMoveScreenState extends State<AddEditMoveScreen> {
       ));
     }
     if (!mounted) return;
-    showBrkToast(context, _isEdit ? 'Move updated' : 'Move logged');
+    showBrkToast(
+      context,
+      _isEdit ? 'Move updated' : 'Move logged',
+      icon: _isEdit ? Icons.edit_outlined : Icons.check_circle_outline,
+    );
     Navigator.of(context).pop();
   }
 }

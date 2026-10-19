@@ -35,7 +35,8 @@ class SetsTab extends StatelessWidget {
                       'Group vocabulary moves into a routine you can run on the floor.',
                 )
               : ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 110),
+                  padding: EdgeInsets.fromLTRB(
+                      20, 8, 20, brkFloatingBarInset(context)),
                   itemCount: sets.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 10),
                   itemBuilder: (context, i) {

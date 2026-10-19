@@ -91,28 +91,9 @@ ThemeData buildDarkTheme() {
 }
 
 ThemeData _applyComponentThemes(ThemeData theme) {
-  // The bottom bar and the text fields are the only Material components the
-  // app still shows; everything else is drawn by lib/components.
+  // Text fields are the only Material component the app still shows; the bar
+  // and everything else is drawn by lib/components.
   return theme.copyWith(
-    navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: AppColors.surface,
-      indicatorColor: AppColors.accentSoft,
-      height: 68,
-      iconTheme: WidgetStateProperty.resolveWith((states) {
-        final selected = states.contains(WidgetState.selected);
-        return IconThemeData(
-          color: selected ? AppColors.accent : AppColors.onSurfaceVariant,
-        );
-      }),
-      labelTextStyle: WidgetStateProperty.resolveWith((states) {
-        final selected = states.contains(WidgetState.selected);
-        return TextStyle(
-          fontSize: 11,
-          fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-          color: selected ? AppColors.accent : AppColors.onSurfaceVariant,
-        );
-      }),
-    ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: AppColors.surface,

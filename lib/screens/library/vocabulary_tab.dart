@@ -96,7 +96,8 @@ class _VocabularyTabState extends State<VocabularyTab> {
                   hasMoves: state.moves.count > 0,
                 )
               : ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 110),
+                  padding: EdgeInsets.fromLTRB(
+                      20, 12, 20, brkFloatingBarInset(context)),
                   itemCount: results.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 10),
                   itemBuilder: (_, i) => MoveCard(move: results[i]),

@@ -206,7 +206,7 @@ class MoveDetailScreen extends StatelessWidget {
     }
     await state.moves.remove(move.id);
     if (!context.mounted) return;
-    showBrkToast(context, 'Move deleted');
+    showBrkToast(context, 'Move deleted', icon: Icons.delete_outline);
     Navigator.of(context).pop();
   }
 }

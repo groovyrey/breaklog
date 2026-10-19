@@ -7,11 +7,15 @@ import '../theme/app_theme.dart';
 /// The toast currently on screen, so a new one replaces it instead of stacking.
 OverlayEntry? _active;
 
-/// Shows a short confirmation at the bottom of the screen.
+/// Shows a short confirmation at the top of the screen.
 ///
 /// Lives in the root overlay, so it survives a route pop and can be shown right
 /// before navigating away.
-void showBrkToast(BuildContext context, String message) {
+void showBrkToast(
+  BuildContext context,
+  String message, {
+  IconData icon = Icons.check_circle_outline,
+}) {
   final overlay = Overlay.maybeOf(context, rootOverlay: true);
   if (overlay == null) return;
 
@@ -22,6 +26,7 @@ void showBrkToast(BuildContext context, String message) {
   entry = OverlayEntry(
     builder: (_) => _BrkToast(
       message: message,
+      icon: icon,
       onDismissed: () {
         if (entry.mounted) entry.remove();
         if (identical(_active, entry)) _active = null;
@@ -33,9 +38,14 @@ void showBrkToast(BuildContext context, String message) {
 }
 
 class _BrkToast extends StatefulWidget {
-  const _BrkToast({required this.message, required this.onDismissed});
+  const _BrkToast({
+    required this.message,
+    required this.icon,
+    required this.onDismissed,
+  });
 
   final String message;
+  final IconData icon;
   final VoidCallback onDismissed;
 
   @override
@@ -79,27 +89,45 @@ class _BrkToastState extends State<_BrkToast>
     return Positioned(
       left: 20,
       right: 20,
-      bottom: 28,
+      top: 0,
       child: IgnorePointer(
         child: SafeArea(
-          child: Center(
-            child: FadeTransition(
-              opacity: _curve,
-              child: SlideTransition(
-                position: Tween(begin: const Offset(0, 0.3), end: Offset.zero)
-                    .animate(_curve),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceVariant,
-                    borderRadius: BorderRadius.circular(AppRadius.control),
-                    border: Border.all(color: AppColors.outline),
-                  ),
-                  child: Text(
-                    widget.message,
-                    style: context.appTextTheme.bodySmall
-                        ?.copyWith(color: AppColors.onSurface),
+          bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Center(
+              child: FadeTransition(
+                opacity: _curve,
+                child: SlideTransition(
+                  position: Tween(begin: const Offset(0, -0.3), end: Offset.zero)
+                      .animate(_curve),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 11),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceVariant,
+                      borderRadius: BorderRadius.circular(AppRadius.control),
+                      border: Border.all(color: AppColors.outline),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          widget.icon,
+                          size: 18,
+                          color: AppColors.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            widget.message,
+                            style: context.appTextTheme.bodySmall?.copyWith(
+                              color: AppColors.onSurface,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
