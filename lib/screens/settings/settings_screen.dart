@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../components/index.dart';
 import '../../config.dart';
+import '../../screens/cloud/backup_screen.dart';
 import '../../state/app_state.dart';
 import '../../theme/app_theme.dart';
 import '../about/about_screen.dart';
@@ -40,8 +40,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            const BrkHeader(
+            BrkHeader(
               title: 'Settings',
+              leading: Icons.arrow_back,
+              onLeading: () => Navigator.of(context).maybePop(),
             ),
             Expanded(
               child: ListView(
@@ -121,6 +123,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                   ),
                   const SizedBox(height: 24),
+                  _Section('Cloud'),
+                  BrkCard(
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const BackupScreen()),
+                    ),
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.cloud_upload_outlined,
+                            size: 19, color: AppColors.onSurfaceVariant),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Media backup',
+                                  style: context.appTextTheme.titleSmall
+                                      ?.copyWith(color: AppColors.onSurface)),
+                              const SizedBox(height: 3),
+                              Text(
+                                state.auth.signedIn
+                                    ? 'Copy attachments to ${AppConfig.driveFolderName} in your Drive'
+                                    : 'Sign in to copy attachments to your Drive',
+                                style: context.appTextTheme.bodySmall,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.chevron_right,
+                            size: 18, color: AppColors.onSurfaceVariant),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
                   _Section('About'),
                   BrkCard(
                     onTap: () => Navigator.of(context).push(
@@ -156,25 +192,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  BrkCard(
-                    onTap: () => launchUrl(Uri.parse(AppConfig.githubUrl),
-                        mode: LaunchMode.externalApplication),
-                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.code,
-                            size: 19, color: AppColors.onSurfaceVariant),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text('Source on GitHub',
-                              style: context.appTextTheme.titleSmall
-                                  ?.copyWith(color: AppColors.onSurface)),
-                        ),
-                        const Icon(Icons.chevron_right,
-                            size: 18, color: AppColors.onSurfaceVariant),
-                      ],
-                    ),
-                  ),
                 ],
               ),
             ),

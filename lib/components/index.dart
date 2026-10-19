@@ -1,3 +1,4 @@
+export 'brk_avatar.dart';
 export 'brk_accordion.dart';
 export 'brk_button.dart';
 export 'brk_choice.dart';

@@ -3,10 +3,13 @@ import java.util.Properties
 
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+    id("com.google.gms.google-services")
+    id("kotlin-android")
+    // The Flutter Gradle Plugin must be applied after the Android and Kotlin
+    // Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
+
 
 // Release signing credentials come from android/key.properties (provided by CI
 // secrets or a local build). When absent, release builds fall back to debug

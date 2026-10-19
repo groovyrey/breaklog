@@ -8,6 +8,8 @@ import 'package:breaklog/models/category.dart';
 import 'package:breaklog/models/media.dart';
 import 'package:breaklog/models/move.dart';
 import 'package:breaklog/models/set.dart';
+import 'package:breaklog/services/breaklog_api.dart';
+import 'package:breaklog/services/drive_backup.dart';
 import 'package:breaklog/services/version_checker.dart';
 import 'package:breaklog/state/update_notifier.dart';
 import 'package:breaklog/utils/semver.dart';
@@ -232,6 +234,158 @@ void main() {
       expect(back.media.single.kind, MediaKind.video);
       expect(back.media.single.value, '/data/breaklog_media/1.mp4');
       expect(back.moveIds, ['1', '2']);
+    });
+
+    test('keeps the Drive copy id of an attachment', () {
+      const media = MoveMedia(
+        id: 'm1',
+        kind: MediaKind.photo,
+        value: '/data/breaklog_media/a.jpg',
+        driveFileId: 'drive-1',
+      );
+      final back = MoveMedia.fromJson(jsonDecode(jsonEncode(media.toJson())));
+      expect(back.driveFileId, 'drive-1');
+      expect(back.backedUp, isTrue);
+    });
+
+    test('an attachment with no Drive copy is not marked backed up', () {
+      expect(
+        MoveMedia.fromJson({'id': '1', 'kind': 'photo', 'value': '/tmp/a.jpg'})
+            .backedUp,
+        isFalse,
+      );
+    });
+  });
+
+  group('accounts api', () {
+    const okHeaders = {'content-type': 'application/json'};
+
+    BreaklogApi apiWith(
+      http.Response Function(http.Request request) reply, {
+      void Function(http.Request request)? onRequest,
+    }) {
+      return BreaklogApi(
+        baseUrl: 'https://api.test',
+        client: MockClient((request) async {
+          onRequest?.call(request);
+          return reply(request);
+        }),
+      );
+    }
+
+    test('sign in sends the token and the alias this device has', () async {
+      late http.Request seen;
+      final api = apiWith(
+        (_) => http.Response(
+          jsonEncode({'user': 'u1', 'alias': 'Rey'}),
+          200,
+          headers: okHeaders,
+        ),
+        onRequest: (request) => seen = request,
+      );
+      final row = await api.session('id-token', alias: 'Rey');
+      expect(seen.url.toString(), 'https://api.test/auth/session');
+      expect(seen.headers['authorization'], 'Bearer id-token');
+      expect(jsonDecode(seen.body), {'alias': 'Rey'});
+      expect(row['alias'], 'Rey');
+    });
+
+    test('a first sign in sends no alias so the account keeps its own', () async {
+      late http.Request seen;
+      final api = apiWith(
+        (_) => http.Response('{"user":"u1"}', 200, headers: okHeaders),
+        onRequest: (request) => seen = request,
+      );
+      await api.session('id-token');
+      expect(jsonDecode(seen.body), isEmpty);
+    });
+
+    test('saving the alias posts it to the profile route', () async {
+      late http.Request seen;
+      final api = apiWith(
+        (_) => http.Response('{"alias":"Bboy Rey"}', 200, headers: okHeaders),
+        onRequest: (request) => seen = request,
+      );
+      final row = await api.saveProfile('id-token', 'Bboy Rey');
+      expect(seen.url.path, '/profile');
+      expect(jsonDecode(seen.body), {'alias': 'Bboy Rey'});
+      expect(row['alias'], 'Bboy Rey');
+    });
+
+    test('a rejected token surfaces the worker message', () async {
+      final api = apiWith(
+        (_) => http.Response(
+          '{"error":"token rejected: malformed token"}',
+          401,
+          headers: okHeaders,
+        ),
+      );
+      await expectLater(
+        api.session('junk'),
+        throwsA(isA<ApiException>().having(
+          (error) => error.message,
+          'message',
+          'token rejected: malformed token',
+        )),
+      );
+    });
+  });
+
+  group('drive backup', () {
+    const okHeaders = {'content-type': 'application/json'};
+
+    test('creates the folder once and reuses it after', () async {
+      final requests = <String>[];
+      final drive = DriveBackup(
+        apiUrl: 'https://drive.test/v3',
+        uploadUrl: 'https://drive.test/upload/v3',
+        client: MockClient((request) async {
+          requests.add('${request.method} ${request.url.path}');
+          if (request.method == 'GET') {
+            return http.Response('{"files":[]}', 200, headers: okHeaders);
+          }
+          return http.Response('{"id":"folder-1"}', 200, headers: okHeaders);
+        }),
+      );
+
+      expect(await drive.ensureFolder('access-token'), 'folder-1');
+      expect(await drive.ensureFolder('access-token'), 'folder-1');
+      expect(requests, ['GET /v3/files', 'POST /v3/files']);
+    });
+
+    test('reuses the folder that already exists', () async {
+      final requests = <String>[];
+      final drive = DriveBackup(
+        apiUrl: 'https://drive.test/v3',
+        uploadUrl: 'https://drive.test/upload/v3',
+        client: MockClient((request) async {
+          requests.add('${request.method} ${request.url.path}');
+          return http.Response('{"files":[{"id":"existing"}]}', 200,
+              headers: okHeaders);
+        }),
+      );
+      expect(await drive.ensureFolder('token'), 'existing');
+      expect(requests, ['GET /v3/files']);
+    });
+
+    test('carries the Drive message when a call fails', () async {
+      final drive = DriveBackup(
+        apiUrl: 'https://drive.test/v3',
+        uploadUrl: 'https://drive.test/upload/v3',
+        client: MockClient((_) async => http.Response(
+              '{"error":{"message":"Insufficient permission"}}',
+              403,
+              headers: okHeaders,
+            )),
+      );
+      await expectLater(
+        drive.ensureFolder('token'),
+        throwsA(isA<DriveException>().having(
+          (error) => error.message,
+          'message',
+          'Insufficient permission',
+        )),
+      );
     });
   });
 }

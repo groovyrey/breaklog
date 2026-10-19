@@ -64,7 +64,9 @@ jobs:
         run: flutter test
 
       - name: Build APK (release, arm64 only)
-        run: flutter build apk --release --split-per-abi
+        run: |
+          flutter build apk --release --split-per-abi \
+            --dart-define=GOOGLE_SERVER_CLIENT_ID=${{ vars.GOOGLE_SERVER_CLIENT_ID }}
 
       - name: Determine version
         id: version

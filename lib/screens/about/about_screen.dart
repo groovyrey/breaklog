@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../components/index.dart';
-import '../../config.dart';
 import '../../theme/app_theme.dart';
 
 class AboutScreen extends StatelessWidget {
@@ -51,20 +49,10 @@ class AboutScreen extends StatelessWidget {
                   Text('Where your data lives', style: context.appTextTheme.titleMedium),
                   const SizedBox(height: 8),
                   Text(
-                    'Everything is stored locally on this device. No account, no '
-                    'server, no analytics.',
+                    'Your library lives on this device. Signing in stores your '
+                    'account name and alias, and lets you copy attachments into '
+                    'your own Google Drive.',
                     style: context.appTextTheme.bodyLarge,
-                  ),
-                  const SizedBox(height: 24),
-                  BrkButton(
-                    label: 'Source on GitHub',
-                    variant: BrkButtonVariant.secondary,
-                    icon: Icons.code,
-                    expand: false,
-                    onPressed: () => launchUrl(
-                      Uri.parse(AppConfig.githubUrl),
-                      mode: LaunchMode.externalApplication,
-                    ),
                   ),
                 ],
               ),

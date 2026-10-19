@@ -4,6 +4,7 @@ import '../../components/index.dart';
 import '../../theme/app_theme.dart';
 import '../edit/add_edit_move_screen.dart';
 import '../sets/set_builder_screen.dart';
+import '../top_actions.dart';
 import 'sets_tab.dart';
 import 'vocabulary_tab.dart';
 
@@ -66,7 +67,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
           bottom: false,
           child: Column(
             children: [
-              const BrkHeader(title: 'BreakLog'),
+              const BrkHeader(title: 'BreakLog', actions: [TopBarActions()]),
               Container(
                 color: AppColors.surface,
                 child: const TabBar(

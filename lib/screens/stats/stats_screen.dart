@@ -5,6 +5,7 @@ import '../../components/index.dart';
 import '../../models/move.dart';
 import '../../state/app_state.dart';
 import '../../theme/app_theme.dart';
+import '../top_actions.dart';
 
 /// Totals, a cold-to-hot difficulty spread, and counts per move type.
 class StatsScreen extends StatelessWidget {
@@ -32,6 +33,7 @@ class StatsScreen extends StatelessWidget {
             BrkHeader(
               title: 'Stats',
               eyebrow: total == 0 ? 'nothing logged yet' : '$total moves',
+              actions: const [TopBarActions()],
             ),
             Expanded(
               child: ListView(
