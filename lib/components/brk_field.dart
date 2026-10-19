@@ -50,11 +50,15 @@ class BrkField extends StatelessWidget {
           controller: controller,
           maxLines: maxLines,
           keyboardType: keyboardType,
+          textInputAction:
+              maxLines > 1 ? TextInputAction.newline : TextInputAction.done,
           textCapitalization: textCapitalization,
           onChanged: onChanged,
           validator: validator,
           readOnly: readOnly,
           onTap: onTap,
+          onEditingComplete: () => FocusManager.instance.primaryFocus?.unfocus(),
+          onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
           style: context.appTextTheme.bodyLarge?.copyWith(
             color: AppColors.onSurface,
           ),

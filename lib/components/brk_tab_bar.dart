@@ -116,7 +116,7 @@ class _TabItem extends StatelessWidget {
         height: 46,
         decoration: BoxDecoration(
           color: selected ? AppColors.accentSoft : Colors.transparent,
-          borderRadius: BorderRadius.circular(AppRadius.control),
+          borderRadius: BorderRadius.circular(AppRadius.chip),
           border: Border.all(
             color: selected ? AppColors.outline : Colors.transparent,
           ),

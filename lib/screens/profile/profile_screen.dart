@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../components/index.dart';
 import '../../state/app_state.dart';
 import '../../theme/app_theme.dart';
 
-/// Account and identity settings: who is signed in and the name they battle
-/// under. Reached from the top bar, so this always has a signed in account.
+/// Profile. The details the user battles under, kept on this device and, when
+/// signed in, on the account.
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -16,29 +17,50 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   late final TextEditingController _alias;
+  late final TextEditingController _why;
+  DateTime? _startedAt;
 
   @override
   void initState() {
     super.initState();
-    _alias = TextEditingController(text: context.read<AppState>().alias);
+    final state = context.read<AppState>();
+    _alias = TextEditingController(text: state.alias);
+    _why = TextEditingController(text: state.why);
+    _startedAt = state.startedAt;
   }
 
   @override
   void dispose() {
     _alias.dispose();
+    _why.dispose();
     super.dispose();
   }
 
-  Future<void> _saveAlias() async {
+  Future<void> _pickStarted() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _startedAt ?? DateTime.now(),
+      firstDate: DateTime(1990),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null && mounted) setState(() => _startedAt = picked);
+  }
+
+  Future<void> _save() async {
     final state = context.read<AppState>();
-    await state.setAlias(_alias.text);
+    await state.saveProfile(
+      alias: _alias.text,
+      startedAt: _startedAt,
+      why: _why.text,
+    );
     if (!mounted) return;
+    final pending = state.profilePending;
     showBrkToast(
       context,
-      state.aliasPending
+      pending
           ? 'Saved here. Your account catches up next sign in.'
-          : 'Alias saved to your account',
-      icon: state.aliasPending
+          : 'Profile saved to your account',
+      icon: pending
           ? Icons.cloud_off_outlined
           : Icons.check_circle_outline,
     );
@@ -97,11 +119,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     label: 'Breaking alias',
                     hint: 'The name you battle under',
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 20),
+                  _label('Started breaking'),
+                  const SizedBox(height: 10),
+                  BrkCard(
+                    onTap: _pickStarted,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 15),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.event_outlined,
+                            size: 19, color: AppColors.onSurfaceVariant),
+                        const SizedBox(width: 12),
+                        Text(
+                          _startedAt == null
+                              ? 'Pick a date'
+                              : DateFormat.yMMMd().format(_startedAt!),
+                          style: context.appTextTheme.titleSmall?.copyWith(
+                            color: _startedAt == null
+                                ? AppColors.onSurfaceVariant
+                                : AppColors.onSurface,
+                          ),
+                        ),
+                        const Spacer(),
+                        const Icon(Icons.chevron_right,
+                            size: 18, color: AppColors.onSurfaceVariant),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  BrkField(
+                    controller: _why,
+                    label: 'Why you break',
+                    hint: 'What keeps you going',
+                    maxLines: 3,
+                  ),
+                  const SizedBox(height: 24),
                   BrkButton(
-                    label: 'Save alias',
+                    label: 'Save profile',
                     variant: BrkButtonVariant.secondary,
-                    onPressed: _saveAlias,
+                    onPressed: _save,
                   ),
                   const SizedBox(height: 28),
                   BrkButton(
@@ -118,4 +175,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
+
+  Widget _label(String text) => Text(
+        text.toUpperCase(),
+        style: context.appTextTheme.labelSmall
+            ?.copyWith(color: AppColors.onSurfaceVariant),
+      );
 }

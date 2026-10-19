@@ -27,17 +27,42 @@ class BreaklogApi {
   static const _timeout = Duration(seconds: 30);
 
   /// Sign in handshake. The worker verifies the token, stores the account row,
-  /// and returns it. [alias] is only sent when this device has one, so a first
-  /// sign in on a new device does not clear the name set elsewhere.
-  Future<Map<String, dynamic>> session(String idToken, {String? alias}) => _post(
+  /// and returns it. Each profile field is only sent when this device has a
+  /// value, so a first sign in on a new device does not clear what was set
+  /// elsewhere.
+  Future<Map<String, dynamic>> session(
+    String idToken, {
+    String? alias,
+    String? startedAt,
+    String? why,
+  }) =>
+      _post(
         '/auth/session',
-        {if (alias != null && alias.isNotEmpty) 'alias': alias},
+        {
+          if (alias != null && alias.isNotEmpty) 'alias': alias,
+          if (startedAt != null && startedAt.isNotEmpty) 'startedAt': startedAt,
+          if (why != null && why.isNotEmpty) 'why': why,
+        },
         idToken: idToken,
       );
 
-  /// Saves the name the user battles under.
-  Future<Map<String, dynamic>> saveProfile(String idToken, String alias) =>
-      _post('/profile', {'alias': alias}, idToken: idToken);
+  /// Saves the profile the user battles under. Values are sent as given so
+  /// clearing a field is a real change rather than a no-op.
+  Future<Map<String, dynamic>> saveProfile(
+    String idToken, {
+    required String alias,
+    String? startedAt,
+    String? why,
+  }) =>
+      _post(
+        '/profile',
+        {
+          'alias': alias,
+          if (startedAt != null) 'startedAt': startedAt,
+          if (why != null) 'why': why,
+        },
+        idToken: idToken,
+      );
 
   /// True when the accounts backend answers, used to flag offline mode.
   Future<bool> ping() async {

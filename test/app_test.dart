@@ -290,6 +290,23 @@ void main() {
       expect(row['alias'], 'Rey');
     });
 
+    test('sign in sends the start date and the reason when set', () async {
+      late http.Request seen;
+      final api = apiWith(
+        (_) => http.Response('{"user":"u1"}', 200, headers: okHeaders),
+        onRequest: (request) => seen = request,
+      );
+      await api.session(
+        'id-token',
+        startedAt: '2019-03-01',
+        why: 'It keeps me moving',
+      );
+      expect(jsonDecode(seen.body), {
+        'startedAt': '2019-03-01',
+        'why': 'It keeps me moving',
+      });
+    });
+
     test('a first sign in sends no alias so the account keeps its own', () async {
       late http.Request seen;
       final api = apiWith(
@@ -300,15 +317,24 @@ void main() {
       expect(jsonDecode(seen.body), isEmpty);
     });
 
-    test('saving the alias posts it to the profile route', () async {
+    test('saving the profile posts every field to the profile route', () async {
       late http.Request seen;
       final api = apiWith(
         (_) => http.Response('{"alias":"Bboy Rey"}', 200, headers: okHeaders),
         onRequest: (request) => seen = request,
       );
-      final row = await api.saveProfile('id-token', 'Bboy Rey');
+      final row = await api.saveProfile(
+        'id-token',
+        alias: 'Bboy Rey',
+        startedAt: '2019-03-01',
+        why: 'It keeps me moving',
+      );
       expect(seen.url.path, '/profile');
-      expect(jsonDecode(seen.body), {'alias': 'Bboy Rey'});
+      expect(jsonDecode(seen.body), {
+        'alias': 'Bboy Rey',
+        'startedAt': '2019-03-01',
+        'why': 'It keeps me moving',
+      });
       expect(row['alias'], 'Bboy Rey');
     });
 

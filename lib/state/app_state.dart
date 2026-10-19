@@ -55,12 +55,16 @@ class AppState extends ChangeNotifier {
 
   static const _betaKey = 'breaklog_beta_channel';
   static const _aliasKey = 'breaklog_alias_v1';
+  static const _startedKey = 'breaklog_started_v1';
+  static const _whyKey = 'breaklog_why_v1';
 
   bool _betaChannel = false;
   String _alias = '';
+  DateTime? _startedAt;
+  String _why = '';
   bool _inited = false;
   bool _registering = false;
-  bool _aliasPending = false;
+  bool _profilePending = false;
   bool _wasSignedIn = false;
   bool _online = true;
   Timer? _connectivity;
@@ -75,9 +79,15 @@ class AppState extends ChangeNotifier {
   /// The name the user battles under.
   String get alias => _alias;
 
-  /// True when the saved alias has not reached the account yet, which happens
+  /// The day the user started breaking, if they have set it.
+  DateTime? get startedAt => _startedAt;
+
+  /// Why the user breaks.
+  String get why => _why;
+
+  /// True when the saved profile has not reached the account yet, which happens
   /// when the device is offline. The next sign in retries it.
-  bool get aliasPending => _aliasPending;
+  bool get profilePending => _profilePending;
 
   /// True when a newer release exists on the channel the user opted into.
   bool get hasUpdate => updateNotifier.hasUpdateOn(_betaChannel);
@@ -88,6 +98,8 @@ class AppState extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       _betaChannel = prefs.getBool(_betaKey) ?? false;
       _alias = prefs.getString(_aliasKey) ?? '';
+      _startedAt = _parseDate(prefs.getString(_startedKey));
+      _why = prefs.getString(_whyKey) ?? '';
       await Future.wait([
         moves.load(),
         categories.load(),
@@ -129,26 +141,52 @@ class AppState extends ChangeNotifier {
     super.dispose();
   }
 
-  /// Saves the alias on this device and, when signed in, on the account.
-  Future<void> setAlias(String value) async {
-    _alias = value.trim();
+  /// Saves the profile on this device and, when signed in, on the account.
+  Future<void> saveProfile({
+    required String alias,
+    DateTime? startedAt,
+    required String why,
+  }) async {
+    _alias = alias.trim();
+    _startedAt = startedAt;
+    _why = why.trim();
+    final started = _formatDate(_startedAt);
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_aliasKey, _alias);
+    await prefs.setString(_whyKey, _why);
+    if (started == null) {
+      await prefs.remove(_startedKey);
+    } else {
+      await prefs.setString(_startedKey, started);
+    }
     notifyListeners();
 
     final token = await auth.idToken();
     if (token == null) {
-      _aliasPending = true;
+      _profilePending = true;
       notifyListeners();
       return;
     }
     try {
-      await api.saveProfile(token, _alias);
-      _aliasPending = false;
+      await api.saveProfile(token, alias: _alias, startedAt: started, why: _why);
+      _profilePending = false;
     } on Exception {
-      _aliasPending = true;
+      _profilePending = true;
     }
     notifyListeners();
+  }
+
+  static DateTime? _parseDate(String? value) {
+    if (value == null || value.isEmpty) return null;
+    return DateTime.tryParse(value);
+  }
+
+  static String? _formatDate(DateTime? value) {
+    if (value == null) return null;
+    final month = value.month.toString().padLeft(2, '0');
+    final day = value.day.toString().padLeft(2, '0');
+    return '${value.year.toString().padLeft(4, '0')}-$month-$day';
   }
 
   Future<void> setBetaChannel(bool enabled) async {
@@ -169,8 +207,8 @@ class AppState extends ChangeNotifier {
     checkForUpdates().catchError((_) {});
   }
 
-  /// Registers the account after a sign in and adopts the alias stored for it
-  /// when this device has none.
+  /// Registers the account after a sign in, sending what this device already
+  /// has and adopting anything the account has that this device lacks.
   Future<void> _register() async {
     if (_registering) return;
     _registering = true;
@@ -180,23 +218,43 @@ class AppState extends ChangeNotifier {
       final row = await api.session(
         token,
         alias: _alias.isEmpty ? null : _alias,
+        startedAt: _formatDate(_startedAt),
+        why: _why.isEmpty ? null : _why,
       );
+
+      final prefs = await SharedPreferences.getInstance();
+
       final remoteAlias = row['alias'];
       if (_alias.isEmpty && remoteAlias is String && remoteAlias.isNotEmpty) {
         _alias = remoteAlias;
-        final prefs = await SharedPreferences.getInstance();
         await prefs.setString(_aliasKey, _alias);
-      } else if (_alias.isNotEmpty) {
-        _aliasPending = false;
       }
+
+      final remoteStarted = row['startedAt'];
+      final started = remoteStarted is String ? _parseDate(remoteStarted) : null;
+      if (_startedAt == null && started != null) {
+        _startedAt = started;
+        await prefs.setString(_startedKey, remoteStarted as String);
+      }
+
+      final remoteWhy = row['why'];
+      if (_why.isEmpty && remoteWhy is String && remoteWhy.isNotEmpty) {
+        _why = remoteWhy;
+        await prefs.setString(_whyKey, _why);
+      }
+
+      _profilePending = false;
       notifyListeners();
     } on Exception {
       // Signing in offline is fine. The account catches up on the next sign in.
-      _aliasPending = _alias.isNotEmpty;
+      _profilePending = _hasProfile;
     } finally {
       _registering = false;
     }
   }
+
+  bool get _hasProfile =>
+      _alias.isNotEmpty || _why.isNotEmpty || _startedAt != null;
 
   void _onAuthChanged() {
     final signedIn = auth.signedIn;
