@@ -205,6 +205,8 @@ class MoveDetailScreen extends StatelessWidget {
       if (!media.isRemote) await MediaStore.remove(media.value);
     }
     await state.moves.remove(move.id);
-    if (context.mounted) Navigator.of(context).pop();
+    if (!context.mounted) return;
+    showBrkToast(context, 'Move deleted');
+    Navigator.of(context).pop();
   }
 }

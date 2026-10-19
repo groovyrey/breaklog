@@ -29,9 +29,18 @@ class _Loading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       backgroundColor: AppColors.background,
-      body: Center(child: BrkSpinner(size: 22, stroke: 2)),
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const BrkSpinner(size: 22, stroke: 2),
+            const SizedBox(height: 14),
+            Text('Opening your log', style: context.appTextTheme.bodySmall),
+          ],
+        ),
+      ),
     );
   }
 }

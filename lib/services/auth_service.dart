@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -20,6 +22,7 @@ class AuthService extends ChangeNotifier {
   bool _inited = false;
   bool _busy = false;
   String? _error;
+  Future<void>? _googleReady;
 
   bool get configured => AppConfig.cloudConfigured;
   bool get signedIn => _firebase.currentUser != null;
@@ -30,13 +33,25 @@ class AuthService extends ChangeNotifier {
   String get displayName => _firebase.currentUser?.displayName ?? email;
   String get photoUrl => _firebase.currentUser?.photoURL ?? '';
 
+  /// Wires the Firebase session only. The Firebase user is already persisted on
+  /// device, so startup never has to talk to Google or the network; the Google
+  /// SDK is warmed in the background and awaited where it is actually used.
   Future<void> init() async {
     if (_inited) return;
     _inited = true;
     _firebase.authStateChanges().listen((_) => notifyListeners());
     if (!configured) return;
-    await _google.initialize(serverClientId: AppConfig.googleServerClientId);
-    if (signedIn) await _restoreGoogleSession();
+    final ready = _googleSetup();
+    unawaited(ready.then((_) {}, onError: (_) {}));
+    if (signedIn) unawaited(_restoreGoogleSession());
+  }
+
+  /// Initializes the Google SDK once, with a bound so a stuck platform call
+  /// cannot hang a sign in forever.
+  Future<void> _googleSetup() {
+    return _googleReady ??= _google
+        .initialize(serverClientId: AppConfig.googleServerClientId)
+        .timeout(const Duration(seconds: 15));
   }
 
   Future<bool> signIn() async {
@@ -49,6 +64,7 @@ class AuthService extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
+      await _googleSetup();
       final account = await _google.authenticate();
       final idToken = account.authentication.idToken;
       if (idToken == null) throw StateError('Google returned no id token');
@@ -90,6 +106,7 @@ class AuthService extends ChangeNotifier {
   /// the user did not grant it.
   Future<String?> driveAccessToken() async {
     if (!configured) return null;
+    await _googleSetup();
     final headers = await _google.authorizationClient
         .authorizationHeaders([AppConfig.driveScope], promptIfNecessary: true);
     final value = headers?['Authorization'] ?? headers?['authorization'];
@@ -99,6 +116,7 @@ class AuthService extends ChangeNotifier {
 
   Future<void> _restoreGoogleSession() async {
     try {
+      await _googleSetup();
       final attempt = _google.attemptLightweightAuthentication();
       if (attempt != null) await attempt;
     } on Exception {

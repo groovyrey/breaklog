@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import 'brk_progress.dart';
 
-enum BrkButtonVariant { primary, secondary, ghost, danger }
+enum BrkButtonVariant { primary, secondary, ghost, danger, light }
 
 /// The app's only button. Drawn from scratch so no Material button styling or
 /// platform-adaptive widget leaks in.
@@ -14,6 +14,7 @@ class BrkButton extends StatelessWidget {
     required this.onPressed,
     this.variant = BrkButtonVariant.primary,
     this.icon,
+    this.leading,
     this.expand = true,
     this.loading = false,
   });
@@ -22,6 +23,10 @@ class BrkButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final BrkButtonVariant variant;
   final IconData? icon;
+
+  /// Drawn before the label instead of [icon]; a provider mark like the Google
+  /// G is an image rather than a font glyph.
+  final Widget? leading;
   final bool expand;
   final bool loading;
 
@@ -35,7 +40,10 @@ class BrkButton extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         if (loading) ...[
-          const BrkSpinner(size: 14, stroke: 2, color: AppColors.onAccent),
+          BrkSpinner(size: 14, stroke: 2, color: colors.foreground),
+          const SizedBox(width: 10),
+        ] else if (leading != null) ...[
+          leading!,
           const SizedBox(width: 10),
         ] else if (icon != null) ...[
           Icon(icon, size: 17, color: colors.foreground),
@@ -98,6 +106,11 @@ class BrkButton extends StatelessWidget {
           background: Colors.transparent,
           foreground: AppColors.error,
           border: AppColors.error,
+        ),
+      BrkButtonVariant.light => (
+          background: AppColors.lightSurface,
+          foreground: AppColors.onLight,
+          border: null,
         ),
     };
   }

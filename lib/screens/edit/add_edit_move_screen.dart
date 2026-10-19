@@ -290,6 +290,8 @@ class _AddEditMoveScreenState extends State<AddEditMoveScreen> {
         learnedAt: _learnedAt,
       ));
     }
-    if (mounted) Navigator.of(context).pop();
+    if (!mounted) return;
+    showBrkToast(context, _isEdit ? 'Move updated' : 'Move logged');
+    Navigator.of(context).pop();
   }
 }

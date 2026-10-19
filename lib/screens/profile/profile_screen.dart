@@ -16,7 +16,6 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   late final TextEditingController _alias;
-  bool _saved = false;
 
   @override
   void initState() {
@@ -31,15 +30,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _saveAlias() async {
-    await context.read<AppState>().setAlias(_alias.text);
+    final state = context.read<AppState>();
+    await state.setAlias(_alias.text);
     if (!mounted) return;
-    setState(() => _saved = true);
+    showBrkToast(
+      context,
+      state.aliasPending
+          ? 'Saved here. Your account catches up next sign in.'
+          : 'Alias saved to your account',
+    );
+  }
+
+  Future<void> _signOut() async {
+    final navigator = Navigator.of(context);
+    await context.read<AppState>().auth.signOut();
+    if (!mounted) return;
+    showBrkToast(context, 'Signed out');
+    navigator.popUntil((route) => route.isFirst);
   }
 
   @override
   Widget build(BuildContext context) {
-    final state = context.watch<AppState>();
-    final auth = state.auth;
+    final auth = context.watch<AppState>().auth;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -81,9 +93,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     controller: _alias,
                     label: 'Breaking alias',
                     hint: 'The name you battle under',
-                    onChanged: (_) {
-                      if (_saved) setState(() => _saved = false);
-                    },
                   ),
                   const SizedBox(height: 14),
                   BrkButton(
@@ -91,25 +100,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     variant: BrkButtonVariant.secondary,
                     onPressed: _saveAlias,
                   ),
-                  if (_saved) ...[
-                    const SizedBox(height: 10),
-                    Text(
-                      state.aliasPending
-                          ? 'Saved here. Your account catches up next sign in.'
-                          : 'Alias saved to your account',
-                      style: context.appTextTheme.bodySmall?.copyWith(
-                        color: state.aliasPending
-                            ? AppColors.onSurfaceVariant
-                            : AppColors.accent,
-                      ),
-                    ),
-                  ],
                   const SizedBox(height: 28),
                   BrkButton(
                     label: 'Sign out',
                     variant: BrkButtonVariant.secondary,
                     icon: Icons.logout,
-                    onPressed: auth.signOut,
+                    onPressed: _signOut,
                   ),
                 ],
               ),

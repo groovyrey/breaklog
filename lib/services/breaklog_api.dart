@@ -39,6 +39,30 @@ class BreaklogApi {
   Future<Map<String, dynamic>> saveProfile(String idToken, String alias) =>
       _post('/profile', {'alias': alias}, idToken: idToken);
 
+  /// Cheap reachability probe for the offline indicator.
+  Future<bool> ping() async {
+    try {
+      final response = await _client
+          .get(Uri.parse('$_baseUrl/health'))
+          .timeout(const Duration(seconds: 5));
+      return response.statusCode < 500;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// True when the accounts backend answers, used to flag offline mode.
+  Future<bool> ping() async {
+    try {
+      final response = await _client
+          .get(Uri.parse('$_baseUrl/health'))
+          .timeout(const Duration(seconds: 8));
+      return response.statusCode < 500;
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<Map<String, dynamic>> _post(
     String path,
     Map<String, dynamic> body, {

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 
 import '../theme/app_theme.dart';
@@ -60,14 +61,28 @@ class _BrkVideoViewerState extends State<_BrkVideoViewer> {
   }
 
   Future<void> _init() async {
+    if (!await File(widget.path).exists()) {
+      if (mounted) {
+        setState(() =>
+            _error = 'This clip is not on the device any more.\n${widget.path}');
+      }
+      return;
+    }
     try {
       await _controller.initialize();
       if (!mounted) return;
       setState(() {});
       await _controller.play();
-    } catch (_) {
-      if (mounted) setState(() => _error = 'This clip could not be opened.');
+    } catch (error) {
+      if (mounted) setState(() => _error = _describe(error));
     }
+  }
+
+  String _describe(Object error) {
+    final detail = error is PlatformException
+        ? (error.message ?? error.code)
+        : error.toString();
+    return 'This clip could not be opened.\n$detail\n${widget.path}';
   }
 
   @override

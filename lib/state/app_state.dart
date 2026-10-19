@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -60,9 +62,15 @@ class AppState extends ChangeNotifier {
   bool _registering = false;
   bool _aliasPending = false;
   bool _wasSignedIn = false;
+  bool _online = true;
+  Timer? _connectivity;
 
   bool get betaChannel => _betaChannel;
   bool get inited => _inited;
+
+  /// False while the accounts backend cannot be reached. The library is local,
+  /// so the app stays usable; this only flags that the account is out of sync.
+  bool get online => _online;
 
   /// The name the user battles under.
   String get alias => _alias;
@@ -76,20 +84,49 @@ class AppState extends ChangeNotifier {
 
   Future<void> init() async {
     if (_inited) return;
-    final prefs = await SharedPreferences.getInstance();
-    _betaChannel = prefs.getBool(_betaKey) ?? false;
-    _alias = prefs.getString(_aliasKey) ?? '';
-    await Future.wait([
-      moves.load(),
-      categories.load(),
-      sets.load(),
-      auth.init(),
-    ]);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _betaChannel = prefs.getBool(_betaKey) ?? false;
+      _alias = prefs.getString(_aliasKey) ?? '';
+      await Future.wait([
+        moves.load(),
+        categories.load(),
+        sets.load(),
+        auth.init(),
+      ]);
+    } catch (error, stack) {
+      // An empty library that recovers beats a spinner that never resolves, so
+      // a failed load must not trap startup. Report it rather than swallow it.
+      debugPrint('BreakLog init failed: $error\n$stack');
+    }
     _inited = true;
     notifyListeners();
     _wasSignedIn = auth.signedIn;
-    if (auth.signedIn) await _register();
+    if (auth.signedIn) unawaited(_register());
     unawaitedCheck();
+    _watchConnectivity();
+  }
+
+  void _watchConnectivity() {
+    _checkConnectivity();
+    _connectivity?.cancel();
+    _connectivity = Timer.periodic(
+      const Duration(seconds: 25),
+      (_) => _checkConnectivity(),
+    );
+  }
+
+  Future<void> _checkConnectivity() async {
+    final reachable = await api.ping();
+    if (reachable == _online) return;
+    _online = reachable;
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _connectivity?.cancel();
+    super.dispose();
   }
 
   /// Saves the alias on this device and, when signed in, on the account.

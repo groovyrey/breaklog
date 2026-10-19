@@ -19,6 +19,11 @@ class AppColors {
   static const Color onAccent = Color(0xFFFFFFFF);
   static const Color accentSoft = Color(0xFF2A0E0C);
 
+  /// Filled light button, used where a provider paints its own mark and the
+  /// mark needs a light ground (Google sign in).
+  static const Color lightSurface = Color(0xFFFFFFFF);
+  static const Color onLight = Color(0xFF1F1F1F);
+
   /// Cold-to-hot ramp for difficulty 1..5. Level 5 lands on [accent] so the
   /// hardest moves read as the brand signal, level 1 stays quiet steel.
   static Color difficulty(int level) {

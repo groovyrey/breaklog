@@ -11,7 +11,8 @@ class SignInScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final auth = context.watch<AppState>().auth;
+    final state = context.watch<AppState>();
+    final auth = state.auth;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -19,23 +20,29 @@ class SignInScreen extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 28),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const Spacer(flex: 2),
               Text(
                 'BreakLog',
-                style: context.appTextTheme.headlineMedium
+                style: context.appTextTheme.displayLarge
                     ?.copyWith(color: AppColors.onSurface),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 14),
               Text(
-                'Sign in to open your library.',
-                style: context.appTextTheme.bodyMedium,
+                'A personal log for your bboy moves.',
+                style: context.appTextTheme.bodyLarge
+                    ?.copyWith(color: AppColors.onSurfaceVariant),
               ),
-              const SizedBox(height: 28),
+              const Spacer(flex: 3),
               BrkButton(
                 label: 'Continue with Google',
-                icon: Icons.login,
+                variant: BrkButtonVariant.light,
+                leading: Image.asset(
+                  'assets/images/google_g.png',
+                  width: 18,
+                  height: 18,
+                ),
                 loading: auth.busy,
                 onPressed: () => auth.signIn(),
               ),
@@ -47,6 +54,15 @@ class SignInScreen extends StatelessWidget {
                       ?.copyWith(color: AppColors.error),
                 ),
               ],
+              const SizedBox(height: 16),
+              Text(
+                state.online
+                    ? 'Signing in sets up your alias and Google Drive backup.'
+                    : 'You are offline. Connect to the internet to sign in.',
+                style: context.appTextTheme.bodySmall
+                    ?.copyWith(color: AppColors.onSurfaceVariant),
+              ),
+              const Spacer(),
             ],
           ),
         ),
