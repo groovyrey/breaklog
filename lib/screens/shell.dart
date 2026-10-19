@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 
 import '../components/index.dart';
 import '../theme/app_theme.dart';
+import 'battle/battle_screen.dart';
+import 'book/book_screen.dart';
 import 'edit/add_edit_move_screen.dart';
+import 'home/home_screen.dart';
 import 'library/library_screen.dart';
 import 'sets/set_builder_screen.dart';
-import 'stats/stats_screen.dart';
 
-/// Root shell: the two tabs, with the floating bar drawn over them so content
-/// scrolls underneath it.
+/// Root shell: the four tabs, with the floating bar drawn over them so content
+/// scrolls underneath it. Stats is reached from the top bar instead.
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
 
@@ -17,9 +19,17 @@ class AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<AppShell> {
-  int _index = 0;
+  // Opens on the Library, not the first tab, so the app never lands on a
+  // coming soon page.
+  int _index = 1;
 
   static const List<BrkTab> _tabs = [
+    (
+      icon: Icons.home_outlined,
+      selectedIcon: Icons.home,
+      label: 'Home',
+      supportsAdd: false,
+    ),
     (
       icon: Icons.style_outlined,
       selectedIcon: Icons.style,
@@ -27,9 +37,15 @@ class _AppShellState extends State<AppShell> {
       supportsAdd: true,
     ),
     (
-      icon: Icons.bar_chart_outlined,
-      selectedIcon: Icons.bar_chart,
-      label: 'Stats',
+      icon: Icons.emoji_events_outlined,
+      selectedIcon: Icons.emoji_events,
+      label: 'Battle',
+      supportsAdd: false,
+    ),
+    (
+      icon: Icons.menu_book_outlined,
+      selectedIcon: Icons.menu_book,
+      label: 'Book',
       supportsAdd: false,
     ),
   ];
@@ -81,7 +97,12 @@ class _AppShellState extends State<AppShell> {
         children: [
           IndexedStack(
             index: _index,
-            children: const [LibraryScreen(), StatsScreen()],
+            children: const [
+              HomeScreen(),
+              LibraryScreen(),
+              BattleScreen(),
+              BookScreen(),
+            ],
           ),
           Positioned(
             left: 0,

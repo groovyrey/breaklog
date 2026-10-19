@@ -6,6 +6,7 @@ import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import 'profile/profile_screen.dart';
 import 'settings/settings_screen.dart';
+import 'stats/stats_screen.dart';
 
 /// Profile and settings entries that sit in the top bar of the root screens.
 class TopBarActions extends StatelessWidget {
@@ -38,6 +39,11 @@ class TopBarActions extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
             child: BrkAvatar(photoUrl: state.auth.photoUrl),
           ),
+        ),
+        BrkIconButton(
+          icon: Icons.bar_chart_outlined,
+          tooltip: 'Stats',
+          onTap: () => _open(context, const StatsScreen()),
         ),
         BrkIconButton(
           icon: Icons.settings_outlined,

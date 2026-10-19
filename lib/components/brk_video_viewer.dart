@@ -57,7 +57,14 @@ class _BrkVideoViewerState extends State<_BrkVideoViewer> {
   void initState() {
     super.initState();
     _controller = VideoPlayerController.file(File(widget.path));
+    _controller.addListener(_onControllerUpdate);
     _init();
+  }
+
+  // Playback position arrives on the controller, so the seek bar and clock only
+  // move if we rebuild on each notification (they otherwise froze until pause).
+  void _onControllerUpdate() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _init() async {
@@ -87,6 +94,7 @@ class _BrkVideoViewerState extends State<_BrkVideoViewer> {
 
   @override
   void dispose() {
+    _controller.removeListener(_onControllerUpdate);
     _controller.dispose();
     super.dispose();
   }

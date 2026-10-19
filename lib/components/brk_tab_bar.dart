@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
 /// One destination in the floating bar. [supportsAdd] decides whether the
-/// centre action shows while the tab is active, so a screen with no add flow
-/// (Stats) renders the bar without one.
+/// centre action is enabled while the tab is active; on a screen with no add
+/// flow it stays in place but is disabled, so the bar never reflows.
 typedef BrkTab = ({
   IconData icon,
   IconData selectedIcon,
@@ -43,12 +43,14 @@ class BrkTabBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onChanged;
 
-  /// When null the centre action is hidden.
+  /// The centre action. When null it is still rendered, just disabled, so the
+  /// bar keeps the same width on every tab.
   final VoidCallback? onAdd;
 
   @override
   Widget build(BuildContext context) {
-    final showAdd = onAdd != null;
+    // The add button sits in the middle, so the space is split around it.
+    final mid = (tabs.length + 1) ~/ 2;
     return Stack(
       clipBehavior: Clip.none,
       alignment: Alignment.center,
@@ -69,7 +71,7 @@ class BrkTabBar extends StatelessWidget {
                 children: [
                   for (var i = 0; i < tabs.length; i++) ...[
                     if (i > 0)
-                      SizedBox(width: showAdd && i == 1 ? _addSize + 14 : 4),
+                      SizedBox(width: i == mid ? _addSize + 14 : 4),
                     Expanded(
                       child: _TabItem(
                         tab: tabs[i],
@@ -83,11 +85,10 @@ class BrkTabBar extends StatelessWidget {
             ),
           ),
         ),
-        if (showAdd)
-          Positioned(
-            top: -_addLift,
-            child: BrkFab(icon: Icons.add, size: _addSize, onTap: onAdd!),
-          ),
+        Positioned(
+          top: -_addLift,
+          child: BrkFab(icon: Icons.add, size: _addSize, onTap: onAdd),
+        ),
       ],
     );
   }
@@ -117,7 +118,7 @@ class _TabItem extends StatelessWidget {
           color: selected ? AppColors.accentSoft : Colors.transparent,
           borderRadius: BorderRadius.circular(AppRadius.control),
           border: Border.all(
-            color: selected ? AppColors.accent : Colors.transparent,
+            color: selected ? AppColors.outline : Colors.transparent,
           ),
         ),
         child: Column(
@@ -146,45 +147,57 @@ class _TabItem extends StatelessWidget {
 
 /// Circular action for the floating bar. [size] lets the centre action sit
 /// larger than the bar so it reads as a raised, primary control, with a
-/// background-coloured ring so it looks docked rather than pasted on.
+/// background-coloured ring so it looks docked rather than pasted on. A null
+/// [onTap] renders it muted and inert, with the glyph kept visible on the muted
+/// fill.
 class BrkFab extends StatelessWidget {
   const BrkFab({
     super.key,
     required this.icon,
-    required this.onTap,
+    this.onTap,
     this.tooltip,
     this.size = 60,
   });
 
   final IconData icon;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final String? tooltip;
   final double size;
 
   @override
   Widget build(BuildContext context) {
-    final button = GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        width: size,
-        height: size,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: AppColors.accent,
-          border: Border.all(color: AppColors.background, width: 3),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.accent.withValues(alpha: 0.35),
-              blurRadius: 18,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Icon(icon, size: size * 0.42, color: AppColors.onAccent),
+    final enabled = onTap != null;
+    Widget button = Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: enabled ? AppColors.accent : AppColors.surfaceVariant,
+        border: Border.all(color: AppColors.background, width: 3),
+        boxShadow: enabled
+            ? [
+                BoxShadow(
+                  color: AppColors.accent.withValues(alpha: 0.35),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
+                ),
+              ]
+            : null,
+      ),
+      child: Icon(
+        icon,
+        size: size * 0.42,
+        color: enabled ? AppColors.onAccent : AppColors.onSurfaceVariant,
       ),
     );
+    if (enabled) {
+      button = GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: button,
+      );
+    }
     return tooltip == null
         ? button
         : Tooltip(message: tooltip!, child: button);
