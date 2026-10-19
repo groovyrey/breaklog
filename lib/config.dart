@@ -22,16 +22,9 @@ class AppConfig {
   /// Firebase project, matching `FIREBASE_PROJECT_ID` on the worker.
   static const firebaseProjectId = 'breaklog-de587';
 
-  /// Cloudinary cloud that hosts the login background clips.
+  /// Cloudinary cloud, kept for future asset delivery. The login screen no
+  /// longer streams from it, but assets live under `breaklog-assets`.
   static const cloudinaryCloud = 'soqaygtm';
-
-  /// Login background clips, played in order and looped. Vertical, so they
-  /// cover the screen. Served at a modest width so the first frame lands fast.
-  static const loginVideos = <String>[
-    'https://res.cloudinary.com/$cloudinaryCloud/video/upload/q_auto:low,w_540/Jamix_Project_-_Open_the_world_of_freestyle.mp4',
-    'https://res.cloudinary.com/$cloudinaryCloud/video/upload/q_auto:low,w_540/B-Boy_Run_USA_Crazy_Moment_Red_Bull_Bc_One_Cypher_2023.mp4',
-    'https://res.cloudinary.com/$cloudinaryCloud/video/upload/q_auto:low,w_540/Road_to_Double_Airflare_Monkeyking_Video_clip_by_fitbreakgym_shorts_viral_bc1.mp4',
-  ];
 
   /// Folder created in the user's own Drive for attachment backups.
   static const driveFolderName = 'BreakLog';
