@@ -104,7 +104,7 @@ class DriveBackup {
     await request.sink.addStream(file.openRead());
     await request.sink.close();
 
-    final id = (await _decode(await sent))['id'];
+    final id = (await _decode(await http.Response.fromStream(await sent)))['id'];
     if (id is! String) throw DriveException('Drive did not return a file id');
     return id;
   }
