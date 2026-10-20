@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../components/index.dart';
 import '../../config.dart';
 import '../../screens/cloud/backup_screen.dart';
+import '../../services/notification_service.dart';
 import '../../state/app_state.dart';
 import '../../theme/app_theme.dart';
 import '../about/about_screen.dart';
@@ -122,6 +123,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ],
                     ),
 
+                  ),
+                  const SizedBox(height: 24),
+                  _Section('Notifications'),
+                  BrkCard(
+                    onTap: () async {
+                      final shown =
+                          await NotificationService.instance.showTestNow();
+                      if (!mounted) return;
+                      showBrkToast(
+                        context,
+                        shown
+                            ? 'Test notification shown'
+                            : 'Notifications are off',
+                        icon: shown
+                            ? Icons.notifications_outlined
+                            : Icons.notifications_off_outlined,
+                      );
+                    },
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.notifications_outlined,
+                            size: 19, color: AppColors.onSurfaceVariant),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Test notification',
+                                  style: context.appTextTheme.titleSmall
+                                      ?.copyWith(color: AppColors.onSurface)),
+                              const SizedBox(height: 3),
+                              Text('Send one now, the way 6am will',
+                                  style: context.appTextTheme.bodySmall),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.chevron_right,
+                            size: 18, color: AppColors.onSurfaceVariant),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 24),
                   _Section('Cloud'),

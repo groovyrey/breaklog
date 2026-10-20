@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:video_player_media_kit/video_player_media_kit.dart';
 
 import 'app_root.dart';
+import 'services/notification_service.dart';
 import 'state/app_state.dart';
 import 'theme/app_theme.dart';
 
@@ -46,6 +47,7 @@ class _BootState extends State<_Boot> {
   void initState() {
     super.initState();
     context.read<AppState>().init();
+    NotificationService.instance.init();
   }
 
   @override

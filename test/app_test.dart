@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:intl/intl.dart';
 
+import 'package:breaklog/constants/engaging_messages.dart';
 import 'package:breaklog/models/category.dart';
 import 'package:breaklog/models/media.dart';
 import 'package:breaklog/models/move.dart';
@@ -317,6 +318,18 @@ void main() {
 
       expect(back.media, isEmpty);
       expect(back.body, 'Legs were heavy today.');
+    });
+  });
+
+  group('morning messages', () {
+    test('every line is filled in and unique, so a day never repeats a blank',
+        () {
+      expect(engagingMorningMessages, isNotEmpty);
+      expect(engagingMorningMessages.toSet().length,
+          engagingMorningMessages.length);
+      for (final line in engagingMorningMessages) {
+        expect(line.trim(), isNotEmpty);
+      }
     });
   });
 
