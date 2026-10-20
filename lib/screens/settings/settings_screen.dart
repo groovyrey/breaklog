@@ -5,9 +5,9 @@ import 'package:provider/provider.dart';
 import '../../components/index.dart';
 import '../../config.dart';
 import '../../screens/cloud/backup_screen.dart';
-import '../../services/notification_service.dart';
 import '../../state/app_state.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/reminder_times.dart';
 import '../about/about_screen.dart';
 import '../updates/update_screen.dart';
 
@@ -125,43 +125,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                   ),
                   const SizedBox(height: 24),
-                  _Section('Notifications'),
+                  _Section('Practice reminders'),
+                  for (final minute in state.reminders) ...[
+                    _ReminderRow(
+                      minute: minute,
+                      canRemove: state.reminders.length > 1,
+                      onRemove: () => state.removeReminder(minute),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
                   BrkCard(
                     onTap: () async {
-                      final shown =
-                          await NotificationService.instance.showTestNow();
-                      if (!mounted) return;
-                      showBrkToast(
-                        context,
-                        shown
-                            ? 'Test notification shown'
-                            : 'Notifications are off',
-                        icon: shown
-                            ? Icons.notifications_outlined
-                            : Icons.notifications_off_outlined,
+                      final picked = await showTimePicker(
+                        context: context,
+                        initialTime: const TimeOfDay(hour: 6, minute: 0),
                       );
+                      if (picked == null) return;
+                      await state.addReminder(picked.hour * 60 + picked.minute);
                     },
                     padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
                     child: Row(
                       children: [
-                        const Icon(Icons.notifications_outlined,
+                        const Icon(Icons.add,
                             size: 19, color: AppColors.onSurfaceVariant),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Test notification',
+                              Text('Add a time',
                                   style: context.appTextTheme.titleSmall
                                       ?.copyWith(color: AppColors.onSurface)),
                               const SizedBox(height: 3),
-                              Text('Send one now, the way 6am will',
+                              Text('Another nudge during the day',
                                   style: context.appTextTheme.bodySmall),
                             ],
                           ),
                         ),
-                        const Icon(Icons.chevron_right,
-                            size: 18, color: AppColors.onSurfaceVariant),
                       ],
                     ),
                   ),
@@ -240,6 +240,48 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ReminderRow extends StatelessWidget {
+  const _ReminderRow({
+    required this.minute,
+    required this.canRemove,
+    required this.onRemove,
+  });
+
+  final int minute;
+  final bool canRemove;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return BrkCard(
+      padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+      child: Row(
+        children: [
+          const Icon(Icons.notifications_active_outlined,
+              size: 19, color: AppColors.onSurfaceVariant),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              reminderTimeLabel(minute),
+              style: context.appTextTheme.titleSmall
+                  ?.copyWith(color: AppColors.onSurface),
+            ),
+          ),
+          if (canRemove)
+            IconButton(
+              onPressed: onRemove,
+              tooltip: 'Remove ${reminderTimeLabel(minute)}',
+              icon: const Icon(Icons.close,
+                  size: 18, color: AppColors.onSurfaceVariant),
+            )
+          else
+            const SizedBox(width: 8),
+        ],
       ),
     );
   }
