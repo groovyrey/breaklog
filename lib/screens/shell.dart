@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../components/index.dart';
 import '../theme/app_theme.dart';
 import 'battle/battle_screen.dart';
+import 'battle/plan_sheet.dart';
+import 'battle/prep_tab.dart';
 import 'book/book_screen.dart';
 import 'edit/add_edit_move_screen.dart';
 import 'home/add_note_sheet.dart';
@@ -41,7 +43,7 @@ class _AppShellState extends State<AppShell> {
       icon: Icons.emoji_events_outlined,
       selectedIcon: Icons.emoji_events,
       label: 'Battle',
-      supportsAdd: false,
+      supportsAdd: true,
     ),
     (
       icon: Icons.menu_book_outlined,
@@ -55,6 +57,10 @@ class _AppShellState extends State<AppShell> {
     // Index 0 is Home, whose only add is a note; the library keeps moves and sets.
     if (_index == 0) {
       await _openNoteAdd();
+      return;
+    }
+    if (_index == 2) {
+      await _openBattleAdd();
       return;
     }
     final choice = await showBrkSheet<String>(
@@ -115,6 +121,41 @@ class _AppShellState extends State<AppShell> {
 
     if (!mounted || choice != 'note') return;
     await showNoteSheet(context);
+  }
+
+  Future<void> _openBattleAdd() async {
+    final choice = await showBrkSheet<String>(
+      context: context,
+      builder: (ctx) => BrkSheet(
+        title: 'Add',
+        child: BrkSheetOptions(
+          children: [
+            BrkOptionTile(
+              title: 'Battle plan',
+              subtitle: 'Set rounds for each stage',
+              icon: Icons.emoji_events_outlined,
+              onTap: () => Navigator.of(ctx).pop('plan'),
+            ),
+            BrkOptionTile(
+              title: 'Prep item',
+              subtitle: 'Something to get ready',
+              icon: Icons.checklist_outlined,
+              onTap: () => Navigator.of(ctx).pop('prep'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (!mounted) return;
+    switch (choice) {
+      case 'plan':
+        await showPlanSheet(context);
+      case 'prep':
+        await showAddPrepItem(context);
+      case null:
+        break;
+    }
   }
 
   @override

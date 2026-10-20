@@ -5,17 +5,21 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:intl/intl.dart';
 
-import 'package:breaklog/constants/engaging_messages.dart';
+import 'package:breaklog/constants/practice_reminder_messages.dart';
+import 'package:breaklog/models/battle.dart';
 import 'package:breaklog/models/category.dart';
 import 'package:breaklog/models/media.dart';
 import 'package:breaklog/models/move.dart';
 import 'package:breaklog/models/note.dart';
+import 'package:breaklog/models/prep_item.dart';
 import 'package:breaklog/models/set.dart';
 import 'package:breaklog/services/breaklog_api.dart';
 import 'package:breaklog/services/drive_backup.dart';
 import 'package:breaklog/services/version_checker.dart';
 import 'package:breaklog/state/update_notifier.dart';
+import 'package:breaklog/utils/battle_countdown.dart';
 import 'package:breaklog/utils/cooldown_notice.dart';
+import 'package:breaklog/utils/reminder_times.dart';
 import 'package:breaklog/utils/semver.dart';
 
 void main() {
@@ -321,15 +325,103 @@ void main() {
     });
   });
 
-  group('morning messages', () {
+  group('battle plan', () {
+    test('round-trips its name, date and stages through JSON', () {
+      final plan = BattlePlan(
+        name: 'Summer Jam',
+        eventAt: DateTime.utc(2026, 8, 1, 18),
+        updatedAt: DateTime.utc(2026, 6, 1),
+        stages: const [
+          PlannedStage(stage: BattleStage.prelims, rounds: 1),
+          PlannedStage(
+            stage: BattleStage.final,
+            rounds: 3,
+            planIds: ['m1', 's1'],
+          ),
+        ],
+      );
+
+      final back = BattlePlan.fromJson(jsonDecode(jsonEncode(plan.toJson())));
+
+      expect(back.name, 'Summer Jam');
+      expect(back.eventAt, DateTime.utc(2026, 8, 1, 18));
+      expect(back.stages.length, 2);
+      expect(back.stages.first.stage, BattleStage.prelims);
+      expect(back.stages.last.rounds, 3);
+      expect(back.stages.last.planIds, ['m1', 's1']);
+    });
+
+    test('removes a stage and appends one at the end', () {
+      final plan = BattlePlan(
+        name: 'Local',
+        eventAt: DateTime.utc(2026, 7, 1),
+        updatedAt: DateTime.utc(2026, 6, 1),
+        stages: const [],
+      );
+
+      final seeded = plan
+          .withStage(-1, const PlannedStage(stage: BattleStage.prelims, rounds: 1))
+          .withStage(-1, const PlannedStage(stage: BattleStage.top16, rounds: 1))
+          .withoutStage(BattleStage.prelims);
+
+      expect(seeded.stages.length, 1);
+      expect(seeded.stages.single.stage, BattleStage.top16);
+    });
+  });
+
+  group('battle countdown', () {
+    test('names today, tomorrow and the week ahead', () {
+      final now = DateTime(2026, 7, 1, 9);
+      expect(battleCountdown(now, now: now), 'Today');
+      expect(battleCountdown(DateTime(2026, 7, 2), now: now), 'Tomorrow');
+      expect(battleCountdown(DateTime(2026, 7, 5), now: now), 'In 4 days');
+    });
+
+    test('falls back to the date further out', () {
+      final label =
+          battleCountdown(DateTime(2026, 8, 20), now: DateTime(2026, 7, 1));
+      expect(label, contains('2026'));
+    });
+  });
+
+  group('prep item', () {
+    test('round-trips its text and done flag through JSON', () {
+      final item = PrepItem(
+        id: 'p1',
+        text: 'Practice roundoff to freeze',
+        done: true,
+        createdAt: DateTime.utc(2026, 6, 20),
+      );
+
+      final back = PrepItem.fromJson(jsonDecode(jsonEncode(item.toJson())));
+
+      expect(back.id, 'p1');
+      expect(back.text, 'Practice roundoff to freeze');
+      expect(back.done, isTrue);
+    });
+  });
+
+  group('practice reminders', () {
     test('every line is filled in and unique, so a day never repeats a blank',
         () {
-      expect(engagingMorningMessages, isNotEmpty);
-      expect(engagingMorningMessages.toSet().length,
-          engagingMorningMessages.length);
-      for (final line in engagingMorningMessages) {
+      expect(practiceReminderMessages, isNotEmpty);
+      expect(practiceReminderMessages.toSet().length,
+          practiceReminderMessages.length);
+      for (final line in practiceReminderMessages) {
         expect(line.trim(), isNotEmpty);
       }
+    });
+
+    test('formats reminder minutes as 12 hour clock times', () {
+      final morning = reminderTimeLabel(6 * 60 + 5);
+      expect(morning, contains('6:05'));
+      expect(morning, contains('AM'));
+
+      final evening = reminderTimeLabel(18 * 60 + 30);
+      expect(evening, contains('6:30'));
+      expect(evening, contains('PM'));
+
+      expect(reminderTimeLabel(0), contains('12:00'));
     });
   });
 

@@ -3,16 +3,18 @@ import 'package:flutter/material.dart';
 import '../../components/index.dart';
 import '../../theme/app_theme.dart';
 import '../top_actions.dart';
+import 'plan_tab.dart';
+import 'prep_tab.dart';
 
-/// Battle planning. The tab bar is scaffolded with Plan as the first tab; the
-/// content is not built yet.
+/// Battle: what is being planned for the event and what to get ready for it.
+/// Plan sets rounds per stage; Prep is the checklist of things to be ready.
 class BattleScreen extends StatelessWidget {
   const BattleScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 1,
+      length: 2,
       child: Scaffold(
         backgroundColor: AppColors.background,
         body: SafeArea(
@@ -32,14 +34,16 @@ class BattleScreen extends StatelessWidget {
                   indicatorColor: AppColors.accent,
                   tabs: [
                     Tab(text: 'Plan'),
+                    Tab(text: 'Prep'),
                   ],
                 ),
               ),
               const Expanded(
-                child: BrkEmptyState(
-                  icon: Icons.emoji_events_outlined,
-                  title: 'Coming soon',
-                  message: 'Battle is not built yet.',
+                child: TabBarView(
+                  children: [
+                    PlanTab(),
+                    PrepTab(),
+                  ],
                 ),
               ),
             ],

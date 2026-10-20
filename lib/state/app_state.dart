@@ -5,10 +5,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config.dart';
 import '../services/auth_service.dart';
+import '../services/battle_repository.dart';
 import '../services/breaklog_api.dart';
 import '../services/category_repository.dart';
 import '../services/move_repository.dart';
 import '../services/note_repository.dart';
+import '../services/notification_service.dart';
+import '../services/prep_repository.dart';
 import '../services/set_repository.dart';
 import 'update_notifier.dart';
 
@@ -38,6 +41,8 @@ class AppState extends ChangeNotifier {
     CategoryRepository? categories,
     SetRepository? sets,
     NoteRepository? notes,
+    BattleRepository? battle,
+    PrepRepository? prep,
     UpdateNotifier? updates,
     AuthService? auth,
     BreaklogApi? api,
@@ -45,6 +50,8 @@ class AppState extends ChangeNotifier {
         categories = categories ?? CategoryRepository(),
         sets = sets ?? SetRepository(),
         notes = notes ?? NoteRepository(),
+        battle = battle ?? BattleRepository(),
+        prep = prep ?? PrepRepository(),
         updateNotifier = updates ?? UpdateNotifier(),
         auth = auth ?? AuthService(),
         api = api ?? BreaklogApi() {
@@ -55,6 +62,8 @@ class AppState extends ChangeNotifier {
       this.categories,
       this.sets,
       this.notes,
+      this.battle,
+      this.prep,
       updateNotifier,
       this.auth,
     ]) {
@@ -69,6 +78,10 @@ class AppState extends ChangeNotifier {
 
   /// Journal notes written from Home, on this device only.
   final NoteRepository notes;
+
+  /// The battle plan and its prep checklist, on this device only.
+  final BattleRepository battle;
+  final PrepRepository prep;
   final UpdateNotifier updateNotifier;
   final AuthService auth;
 
@@ -81,8 +94,11 @@ class AppState extends ChangeNotifier {
   static const _startedKey = 'breaklog_started_v1';
   static const _whyKey = 'breaklog_why_v1';
   static const _profileUpdatedKey = 'breaklog_profile_updated_v1';
+  static const _remindersKey = 'breaklog_reminders_v1';
+  static const _defaultReminder = 6 * 60;
 
   bool _betaChannel = false;
+  List<int> _reminders = const [_defaultReminder];
   String _alias = '';
   DateTime? _startedAt;
   String _why = '';
@@ -96,6 +112,10 @@ class AppState extends ChangeNotifier {
 
   bool get betaChannel => _betaChannel;
   bool get inited => _inited;
+
+  /// Minutes after midnight for each daily practice reminder, sorted. There is
+  /// always at least one: reminders are the core of the app.
+  List<int> get reminders => List.unmodifiable(_reminders);
 
   /// False while the accounts backend cannot be reached. The library is local,
   /// so the app stays usable; this only flags that the account is out of sync.
@@ -132,6 +152,7 @@ class AppState extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       _betaChannel = prefs.getBool(_betaKey) ?? false;
+      _reminders = _parseReminders(prefs.getStringList(_remindersKey));
       _alias = prefs.getString(_aliasKey) ?? '';
       _startedAt = _parseDate(prefs.getString(_startedKey));
       _why = prefs.getString(_whyKey) ?? '';
@@ -144,6 +165,8 @@ class AppState extends ChangeNotifier {
         categories.load(),
         sets.load(),
         notes.load(),
+        battle.load(),
+        prep.load(),
         auth.init(),
       ]);
     } catch (error, stack) {
@@ -157,6 +180,7 @@ class AppState extends ChangeNotifier {
     if (auth.signedIn) unawaited(_register());
     unawaitedCheck();
     _watchConnectivity();
+    NotificationService.instance.configure(_reminders);
   }
 
   void _watchConnectivity() {
@@ -268,6 +292,42 @@ class AppState extends ChangeNotifier {
     final month = value.month.toString().padLeft(2, '0');
     final day = value.day.toString().padLeft(2, '0');
     return '${value.year.toString().padLeft(4, '0')}-$month-$day';
+  }
+
+  /// Adds a daily reminder, keeping the list sorted and duplicate free.
+  Future<void> addReminder(int minute) async {
+    if (_reminders.contains(minute)) return;
+    _reminders = [..._reminders, minute]..sort();
+    await _saveReminders();
+  }
+
+  /// Removes a daily reminder. The last one stays, so the app always has a
+  /// practice nudge.
+  Future<void> removeReminder(int minute) async {
+    if (_reminders.length == 1) return;
+    _reminders = [..._reminders]..remove(minute);
+    await _saveReminders();
+  }
+
+  Future<void> _saveReminders() async {
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(
+      _remindersKey,
+      _reminders.map((minute) => '$minute').toList(),
+    );
+    await NotificationService.instance.configure(_reminders);
+  }
+
+  static List<int> _parseReminders(List<String>? stored) {
+    final minutes = <int>[];
+    for (final value in stored ?? const <String>[]) {
+      final minute = int.tryParse(value);
+      if (minute == null || minute < 0 || minute >= 24 * 60) continue;
+      if (!minutes.contains(minute)) minutes.add(minute);
+    }
+    if (minutes.isEmpty) return const [_defaultReminder];
+    return minutes..sort();
   }
 
   Future<void> setBetaChannel(bool enabled) async {
