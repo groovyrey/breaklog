@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../components/index.dart';
 import '../../state/app_state.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/cooldown_notice.dart';
 
 /// Profile. The details the user battles under, kept on this device and, when
 /// signed in, on the account.
@@ -48,22 +49,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _save() async {
     final state = context.read<AppState>();
-    await state.saveProfile(
+    final outcome = await state.saveProfile(
       alias: _alias.text,
       startedAt: _startedAt,
       why: _why.text,
     );
     if (!mounted) return;
-    final pending = state.profilePending;
-    showBrkToast(
-      context,
-      pending
-          ? 'Saved here. Your account catches up next sign in.'
-          : 'Profile saved to your account',
-      icon: pending
-          ? Icons.cloud_off_outlined
-          : Icons.check_circle_outline,
-    );
+    if (outcome == ProfileSaveOutcome.busy) return;
+    final ends = state.profileLockEndsAt;
+    switch (outcome) {
+      case ProfileSaveOutcome.saved:
+        showBrkToast(context, 'Profile saved to your account',
+            icon: Icons.check_circle_outline);
+      case ProfileSaveOutcome.localOnly:
+        showBrkToast(context, 'Saved here. Your account catches up next sign in.',
+            icon: Icons.cloud_off_outlined);
+      case ProfileSaveOutcome.tooSoon:
+        showBrkToast(
+          context,
+          ends == null
+              ? 'Profile can only be updated once a week'
+              : cooldownNotice(ends),
+          icon: Icons.lock_outline,
+        );
+      case ProfileSaveOutcome.busy:
+        break;
+    }
   }
 
   Future<void> _signOut() async {
@@ -76,7 +87,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final auth = context.watch<AppState>().auth;
+    final state = context.watch<AppState>();
+    final auth = state.auth;
+    final lockEnds = state.profileLockEndsAt;
+    // Inside the weekly window the whole form is read only, so nothing can be
+    // typed that the account will not take.
+    final frozen = state.profileLocked || state.profileSaving;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -119,12 +135,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     controller: _alias,
                     label: 'Breaking alias',
                     hint: 'The name you battle under',
+                    readOnly: frozen,
                   ),
                   const SizedBox(height: 20),
                   _label('Started breaking'),
                   const SizedBox(height: 10),
                   BrkCard(
-                    onTap: _pickStarted,
+                    onTap: frozen ? null : _pickStarted,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 15),
                     child: Row(
@@ -143,8 +160,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                         ),
                         const Spacer(),
-                        const Icon(Icons.chevron_right,
-                            size: 18, color: AppColors.onSurfaceVariant),
+                        if (!frozen)
+                          const Icon(Icons.chevron_right,
+                              size: 18, color: AppColors.onSurfaceVariant),
                       ],
                     ),
                   ),
@@ -154,13 +172,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     label: 'Why you break',
                     hint: 'What keeps you going',
                     maxLines: 3,
+                    readOnly: frozen,
                   ),
                   const SizedBox(height: 24),
                   BrkButton(
                     label: 'Save profile',
                     variant: BrkButtonVariant.secondary,
-                    onPressed: _save,
+                    loading: state.profileSaving,
+                    onPressed: frozen ? null : _save,
                   ),
+                  if (lockEnds != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      cooldownNotice(lockEnds),
+                      style: context.appTextTheme.bodySmall,
+                    ),
+                  ],
                   const SizedBox(height: 28),
                   BrkButton(
                     label: 'Sign out',

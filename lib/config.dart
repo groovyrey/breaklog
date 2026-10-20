@@ -26,6 +26,10 @@ class AppConfig {
   /// longer streams from it, but assets live under `breaklog-assets`.
   static const cloudinaryCloud = 'soqaygtm';
 
+  /// Profile edits open once a week. The worker enforces it; the app mirrors
+  /// it so Save is honest before any request goes out.
+  static const profileCooldown = Duration(days: 7);
+
   /// Folder created in the user's own Drive for attachment backups.
   static const driveFolderName = 'BreakLog';
 

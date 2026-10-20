@@ -5,6 +5,7 @@ import '../theme/app_theme.dart';
 import 'battle/battle_screen.dart';
 import 'book/book_screen.dart';
 import 'edit/add_edit_move_screen.dart';
+import 'home/add_note_sheet.dart';
 import 'home/home_screen.dart';
 import 'library/library_screen.dart';
 import 'sets/set_builder_screen.dart';
@@ -28,7 +29,7 @@ class _AppShellState extends State<AppShell> {
       icon: Icons.home_outlined,
       selectedIcon: Icons.home,
       label: 'Home',
-      supportsAdd: false,
+      supportsAdd: true,
     ),
     (
       icon: Icons.style_outlined,
@@ -51,6 +52,11 @@ class _AppShellState extends State<AppShell> {
   ];
 
   Future<void> _openAddSheet() async {
+    // Index 0 is Home, whose only add is a note; the library keeps moves and sets.
+    if (_index == 0) {
+      await _openNoteAdd();
+      return;
+    }
     final choice = await showBrkSheet<String>(
       context: context,
       builder: (ctx) => BrkSheet(
@@ -87,6 +93,28 @@ class _AppShellState extends State<AppShell> {
       case null:
         break;
     }
+  }
+
+  Future<void> _openNoteAdd() async {
+    final choice = await showBrkSheet<String>(
+      context: context,
+      builder: (ctx) => BrkSheet(
+        title: 'Add',
+        child: BrkSheetOptions(
+          children: [
+            BrkOptionTile(
+              title: 'Add note',
+              subtitle: "Write today's journal entry",
+              icon: Icons.edit_note,
+              onTap: () => Navigator.of(ctx).pop('note'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (!mounted || choice != 'note') return;
+    await showNoteSheet(context);
   }
 
   @override

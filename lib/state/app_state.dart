@@ -3,12 +3,29 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../config.dart';
 import '../services/auth_service.dart';
 import '../services/breaklog_api.dart';
 import '../services/category_repository.dart';
 import '../services/move_repository.dart';
+import '../services/note_repository.dart';
 import '../services/set_repository.dart';
 import 'update_notifier.dart';
+
+/// What a profile save did, so the screen can say it plainly.
+enum ProfileSaveOutcome {
+  /// Reached the account.
+  saved,
+
+  /// Kept on this device only; the account catches up at the next sign in.
+  localOnly,
+
+  /// Refused: the weekly window is still shut.
+  tooSoon,
+
+  /// A save was already running.
+  busy,
+}
 
 /// App-wide composition root.
 ///
@@ -20,12 +37,14 @@ class AppState extends ChangeNotifier {
     MoveRepository? moves,
     CategoryRepository? categories,
     SetRepository? sets,
+    NoteRepository? notes,
     UpdateNotifier? updates,
     AuthService? auth,
     BreaklogApi? api,
   })  : moves = moves ?? MoveRepository(),
         categories = categories ?? CategoryRepository(),
         sets = sets ?? SetRepository(),
+        notes = notes ?? NoteRepository(),
         updateNotifier = updates ?? UpdateNotifier(),
         auth = auth ?? AuthService(),
         api = api ?? BreaklogApi() {
@@ -35,6 +54,7 @@ class AppState extends ChangeNotifier {
       this.moves,
       this.categories,
       this.sets,
+      this.notes,
       updateNotifier,
       this.auth,
     ]) {
@@ -46,6 +66,9 @@ class AppState extends ChangeNotifier {
   final MoveRepository moves;
   final CategoryRepository categories;
   final SetRepository sets;
+
+  /// Journal notes written from Home, on this device only.
+  final NoteRepository notes;
   final UpdateNotifier updateNotifier;
   final AuthService auth;
 
@@ -57,6 +80,7 @@ class AppState extends ChangeNotifier {
   static const _aliasKey = 'breaklog_alias_v1';
   static const _startedKey = 'breaklog_started_v1';
   static const _whyKey = 'breaklog_why_v1';
+  static const _profileUpdatedKey = 'breaklog_profile_updated_v1';
 
   bool _betaChannel = false;
   String _alias = '';
@@ -64,7 +88,8 @@ class AppState extends ChangeNotifier {
   String _why = '';
   bool _inited = false;
   bool _registering = false;
-  bool _profilePending = false;
+  bool _profileSaving = false;
+  DateTime? _profileUpdatedAt;
   bool _wasSignedIn = false;
   bool _online = true;
   Timer? _connectivity;
@@ -85,9 +110,19 @@ class AppState extends ChangeNotifier {
   /// Why the user breaks.
   String get why => _why;
 
-  /// True when the saved profile has not reached the account yet, which happens
-  /// when the device is offline. The next sign in retries it.
-  bool get profilePending => _profilePending;
+  /// True while a profile save is running, so Save cannot be tapped twice.
+  bool get profileSaving => _profileSaving;
+
+  /// When profile edits open again, or null while they are open right now.
+  DateTime? get profileLockEndsAt {
+    final at = _profileUpdatedAt;
+    if (at == null) return null;
+    final ends = at.add(AppConfig.profileCooldown);
+    return ends.isAfter(DateTime.now()) ? ends : null;
+  }
+
+  /// True while the weekly window is shut and a save would be refused.
+  bool get profileLocked => profileLockEndsAt != null;
 
   /// True when a newer release exists on the channel the user opted into.
   bool get hasUpdate => updateNotifier.hasUpdateOn(_betaChannel);
@@ -100,10 +135,15 @@ class AppState extends ChangeNotifier {
       _alias = prefs.getString(_aliasKey) ?? '';
       _startedAt = _parseDate(prefs.getString(_startedKey));
       _why = prefs.getString(_whyKey) ?? '';
+      final profileUpdated = prefs.getInt(_profileUpdatedKey);
+      if (profileUpdated != null) {
+        _profileUpdatedAt = DateTime.fromMillisecondsSinceEpoch(profileUpdated);
+      }
       await Future.wait([
         moves.load(),
         categories.load(),
         sets.load(),
+        notes.load(),
         auth.init(),
       ]);
     } catch (error, stack) {
@@ -142,39 +182,80 @@ class AppState extends ChangeNotifier {
   }
 
   /// Saves the profile on this device and, when signed in, on the account.
-  Future<void> saveProfile({
+  /// The weekly window is checked first, so a refused save changes nothing.
+  Future<ProfileSaveOutcome> saveProfile({
     required String alias,
     DateTime? startedAt,
     required String why,
   }) async {
-    _alias = alias.trim();
-    _startedAt = startedAt;
-    _why = why.trim();
-    final started = _formatDate(_startedAt);
+    if (_profileSaving) return ProfileSaveOutcome.busy;
+    if (profileLocked) return ProfileSaveOutcome.tooSoon;
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_aliasKey, _alias);
-    await prefs.setString(_whyKey, _why);
-    if (started == null) {
-      await prefs.remove(_startedKey);
-    } else {
-      await prefs.setString(_startedKey, started);
-    }
+    _profileSaving = true;
     notifyListeners();
-
-    final token = await auth.idToken();
-    if (token == null) {
-      _profilePending = true;
-      notifyListeners();
-      return;
-    }
     try {
-      await api.saveProfile(token, alias: _alias, startedAt: started, why: _why);
-      _profilePending = false;
-    } on Exception {
-      _profilePending = true;
+      _alias = alias.trim();
+      _startedAt = startedAt;
+      _why = why.trim();
+      final started = _formatDate(_startedAt);
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_aliasKey, _alias);
+      await prefs.setString(_whyKey, _why);
+      if (started == null) {
+        await prefs.remove(_startedKey);
+      } else {
+        await prefs.setString(_startedKey, started);
+      }
+      notifyListeners();
+
+      // The edit is spent here, online or not, so the device cannot keep
+      // reopening the window while the account stays behind.
+      await _markProfileUpdated(DateTime.now());
+
+      final token = await auth.idToken();
+      if (token == null) {
+        return ProfileSaveOutcome.localOnly;
+      }
+      try {
+        final row = await api.saveProfile(
+          token,
+          alias: _alias,
+          startedAt: started,
+          why: _why,
+        );
+        await _adoptAccountProfileUpdated(row['profileUpdatedAt']);
+        return ProfileSaveOutcome.saved;
+      } on ProfileCooldownException catch (error) {
+        // Another device got there first. The account's clock is the real one.
+        final nextAt = error.nextAt;
+        await _markProfileUpdated(
+          nextAt == null
+              ? DateTime.now()
+              : nextAt.subtract(AppConfig.profileCooldown),
+        );
+        return ProfileSaveOutcome.tooSoon;
+      } on Exception {
+        return ProfileSaveOutcome.localOnly;
+      }
+    } finally {
+      _profileSaving = false;
+      notifyListeners();
     }
-    notifyListeners();
+  }
+
+  Future<void> _markProfileUpdated(DateTime at) async {
+    _profileUpdatedAt = at;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_profileUpdatedKey, at.millisecondsSinceEpoch);
+  }
+
+  /// Adopts the account's edit time, which this device cannot know on its own.
+  Future<void> _adoptAccountProfileUpdated(Object? epoch) async {
+    if (epoch is! int) return;
+    final at = DateTime.fromMillisecondsSinceEpoch(epoch);
+    if (_profileUpdatedAt != null && !at.isAfter(_profileUpdatedAt!)) return;
+    await _markProfileUpdated(at);
   }
 
   static DateTime? _parseDate(String? value) {
@@ -243,18 +324,14 @@ class AppState extends ChangeNotifier {
         await prefs.setString(_whyKey, _why);
       }
 
-      _profilePending = false;
+      await _adoptAccountProfileUpdated(row['profileUpdatedAt']);
       notifyListeners();
     } on Exception {
       // Signing in offline is fine. The account catches up on the next sign in.
-      _profilePending = _hasProfile;
     } finally {
       _registering = false;
     }
   }
-
-  bool get _hasProfile =>
-      _alias.isNotEmpty || _why.isNotEmpty || _startedAt != null;
 
   void _onAuthChanged() {
     final signedIn = auth.signedIn;

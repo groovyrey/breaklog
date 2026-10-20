@@ -14,6 +14,17 @@ class ApiException implements Exception {
   String toString() => message;
 }
 
+/// The worker refused a profile save because the weekly window is still shut.
+class ProfileCooldownException implements Exception {
+  ProfileCooldownException(this.nextAt);
+
+  /// When edits open again, when the worker could say so.
+  final DateTime? nextAt;
+
+  @override
+  String toString() => 'Profile can only be updated once a week';
+}
+
 /// Client for the breaklog-api worker. Requests carry the Firebase ID token;
 /// the database token stays on the worker.
 class BreaklogApi {
@@ -99,6 +110,14 @@ class BreaklogApi {
       body = null;
     }
     final error = body?['error'];
+    if (response.statusCode == 429) {
+      final nextAt = body?['nextAt'];
+      throw ProfileCooldownException(
+        nextAt is int
+            ? DateTime.fromMillisecondsSinceEpoch(nextAt)
+            : null,
+      );
+    }
     if (response.statusCode >= 400) {
       throw ApiException(
         error is String ? error : 'Request failed (${response.statusCode})',

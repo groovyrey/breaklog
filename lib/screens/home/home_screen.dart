@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import '../../components/index.dart';
 import '../../theme/app_theme.dart';
 import '../top_actions.dart';
+import 'all_tab.dart';
+import 'today_tab.dart';
 
-const double _tileWidth = 52;
-const double _tileGap = 8;
-const double _stripPadding = 20;
-
-/// Home. The current month with a horizontal strip of its days, today marked.
+/// Home: Today's journal and every note, with one search field shared by both
+/// tabs. The add action lives in the shell's floating bar and writes a note
+/// from here.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -18,137 +17,71 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final DateTime _today = DateTime.now();
-  late final List<DateTime> _days;
-  ScrollController? _scroll;
-
-  @override
-  void initState() {
-    super.initState();
-    final count = DateTime(_today.year, _today.month + 1, 0).day;
-    _days = List<DateTime>.generate(
-      count,
-      (i) => DateTime(_today.year, _today.month, i + 1),
-    );
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _scroll ??= ScrollController(
-      initialScrollOffset: _offsetForToday(MediaQuery.of(context).size.width),
-    );
-  }
-
-  double _offsetForToday(double screenWidth) {
-    final content = _stripPadding * 2 +
-        _days.length * _tileWidth +
-        (_days.length - 1) * _tileGap;
-    final target = _stripPadding +
-        (_today.day - 1) * (_tileWidth + _tileGap) -
-        (screenWidth - _tileWidth) / 2;
-    final maxExtent = (content - screenWidth).clamp(0.0, double.infinity);
-    return target.clamp(0.0, maxExtent).toDouble();
-  }
+  final _search = TextEditingController();
 
   @override
   void dispose() {
-    _scroll?.dispose();
+    _search.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            const BrkHeader(
-              title: 'Home',
-              mark: BrkBrandMark(),
-              actions: [TopBarActions()],
-            ),
-            Expanded(
-              child: ListView(
-                padding: EdgeInsets.only(bottom: brkFloatingBarInset(context)),
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Text(
-                      DateFormat.yMMMM().format(_today),
-                      style: context.appTextTheme.titleMedium
-                          ?.copyWith(color: AppColors.onSurface),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    height: 70,
-                    child: ListView.separated(
-                      controller: _scroll,
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: _stripPadding),
-                      itemCount: _days.length,
-                      separatorBuilder: (_, __) =>
-                          const SizedBox(width: _tileGap),
-                      itemBuilder: (_, i) {
-                        final date = _days[i];
-                        return _DayTile(
-                          date: date,
-                          isToday: date.day == _today.day,
-                        );
-                      },
-                    ),
-                  ),
-                ],
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              BrkHeader(
+                title: 'Home',
+                mark: const BrkBrandMark(),
+                actions: const [TopBarActions()],
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DayTile extends StatelessWidget {
-  const _DayTile({required this.date, required this.isToday});
-
-  final DateTime date;
-  final bool isToday;
-
-  @override
-  Widget build(BuildContext context) {
-    final color =
-        isToday ? AppColors.accent : AppColors.onSurfaceVariant;
-    return Container(
-      width: _tileWidth,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: isToday ? AppColors.accentSoft : AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.control),
-        border: Border.all(
-          color: isToday ? AppColors.accent : AppColors.outline,
-        ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            DateFormat.E().format(date).toUpperCase(),
-            style: context.appTextTheme.labelSmall
-                ?.copyWith(color: color, fontSize: 10),
+              Container(
+                color: AppColors.surface,
+                child: const TabBar(
+                  labelColor: AppColors.accent,
+                  unselectedLabelColor: AppColors.onSurfaceVariant,
+                  indicatorColor: AppColors.accent,
+                  tabs: [
+                    Tab(text: 'Today'),
+                    Tab(text: 'All'),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
+                child: BrkField(
+                  controller: _search,
+                  hint: 'Search notes',
+                  suffix: _search.text.isEmpty
+                      ? const Icon(Icons.search,
+                          size: 18, color: AppColors.onSurfaceVariant)
+                      : BrkIconButton(
+                          icon: Icons.close,
+                          size: 34,
+                          onTap: () {
+                            _search.clear();
+                            setState(() {});
+                          },
+                        ),
+                  onChanged: (_) => setState(() {}),
+                ),
+              ),
+              Expanded(
+                child: TabBarView(
+                  children: [
+                    TodayTab(query: _search.text),
+                    AllTab(query: _search.text),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            '${date.day}',
-            style: context.appTextTheme.titleMedium?.copyWith(
-              color: isToday ? AppColors.accent : AppColors.onSurface,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

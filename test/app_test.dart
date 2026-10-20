@@ -3,15 +3,18 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:intl/intl.dart';
 
 import 'package:breaklog/models/category.dart';
 import 'package:breaklog/models/media.dart';
 import 'package:breaklog/models/move.dart';
+import 'package:breaklog/models/note.dart';
 import 'package:breaklog/models/set.dart';
 import 'package:breaklog/services/breaklog_api.dart';
 import 'package:breaklog/services/drive_backup.dart';
 import 'package:breaklog/services/version_checker.dart';
 import 'package:breaklog/state/update_notifier.dart';
+import 'package:breaklog/utils/cooldown_notice.dart';
 import 'package:breaklog/utils/semver.dart';
 
 void main() {
@@ -147,6 +150,29 @@ void main() {
     });
   });
 
+  group('cooldown notice', () {
+    test('counts whole calendar days until the window reopens', () {
+      final now = DateTime.now();
+      final ends = DateTime(now.year, now.month, now.day + 7, 14, 30);
+      expect(
+        cooldownNotice(ends),
+        'Edits open again in 7 days (${DateFormat.yMMMd().format(ends)})',
+      );
+    });
+
+    test('says one day when it opens tomorrow', () {
+      final now = DateTime.now();
+      final ends = DateTime(now.year, now.month, now.day + 1, 9);
+      expect(cooldownNotice(ends), startsWith('Edits open again in 1 day ('));
+    });
+
+    test('says today when the window opens later today', () {
+      final now = DateTime.now();
+      final ends = DateTime(now.year, now.month, now.day, 23, 59);
+      expect(cooldownNotice(ends), contains('today'));
+    });
+  });
+
   group('category store', () {
     test('reads back a category written by toJson', () {
       const category = MoveCategory('Airfreeze');
@@ -257,6 +283,43 @@ void main() {
     });
   });
 
+  group('note model', () {
+    test('round-trips its body, date and attachments through JSON', () {
+      final note = LogNote(
+        id: 'n1',
+        body: 'Finally stuck the roundoff.',
+        createdAt: DateTime.utc(2026, 10, 20, 4, 30),
+        media: const [
+          MoveMedia(
+            id: 'm1',
+            kind: MediaKind.photo,
+            value: '/data/breaklog_media/roundoff.jpg',
+            driveFileId: 'drive-9',
+          ),
+        ],
+      );
+
+      final back = LogNote.fromJson(jsonDecode(jsonEncode(note.toJson())));
+
+      expect(back.id, 'n1');
+      expect(back.body, 'Finally stuck the roundoff.');
+      expect(back.createdAt, DateTime.utc(2026, 10, 20, 4, 30));
+      expect(back.media.single.kind, MediaKind.photo);
+      expect(back.media.single.driveFileId, 'drive-9');
+    });
+
+    test('loads with no attachments when storage has no media list', () {
+      final back = LogNote.fromJson({
+        'id': 'n1',
+        'body': 'Legs were heavy today.',
+        'createdAt': '2026-10-20T04:30:00.000Z',
+      });
+
+      expect(back.media, isEmpty);
+      expect(back.body, 'Legs were heavy today.');
+    });
+  });
+
   group('accounts api', () {
     const okHeaders = {'content-type': 'application/json'};
 
@@ -336,6 +399,29 @@ void main() {
         'why': 'It keeps me moving',
       });
       expect(row['alias'], 'Bboy Rey');
+    });
+
+    test('a save inside the weekly window is refused with the next opening',
+        () async {
+      final nextAt = DateTime.now()
+          .add(const Duration(days: 7))
+          .millisecondsSinceEpoch;
+      final api = apiWith(
+        (_) => http.Response(
+          '{"error":"Profile can only be updated once a week",'
+          '"retryAfter":604800,"nextAt":$nextAt}',
+          429,
+          headers: okHeaders,
+        ),
+      );
+      await expectLater(
+        api.saveProfile('id-token', alias: 'Bboy Rey'),
+        throwsA(isA<ProfileCooldownException>().having(
+          (error) => error.nextAt,
+          'nextAt',
+          DateTime.fromMillisecondsSinceEpoch(nextAt),
+        )),
+      );
     });
 
     test('a rejected token surfaces the worker message', () async {
