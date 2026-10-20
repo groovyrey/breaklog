@@ -22,6 +22,11 @@ class SignInScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Spacer(flex: 2),
+              Image.asset(
+                'assets/images/breaklog_logo.png',
+                height: 52,
+              ),
+              const SizedBox(height: 16),
               Text(
                 'BreakLog',
                 style: context.appTextTheme.displayLarge

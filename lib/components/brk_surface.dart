@@ -12,6 +12,7 @@ class BrkHeader extends StatelessWidget {
     this.actions = const [],
     this.leading,
     this.onLeading,
+    this.mark,
   });
 
   final String title;
@@ -19,6 +20,9 @@ class BrkHeader extends StatelessWidget {
   final List<Widget> actions;
   final IconData? leading;
   final VoidCallback? onLeading;
+
+  /// Brand mark set to the left of the title.
+  final Widget? mark;
 
   @override
   Widget build(BuildContext context) {
@@ -41,12 +45,22 @@ class BrkHeader extends StatelessWidget {
                         ?.copyWith(color: AppColors.accent),
                   ),
                 if (eyebrow != null) const SizedBox(height: 4),
-                Text(
-                  title,
-                  style: context.appTextTheme.headlineSmall
-                      ?.copyWith(color: AppColors.onSurface),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                Row(
+                  children: [
+                    if (mark != null) ...[
+                      mark!,
+                      const SizedBox(width: 10),
+                    ],
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: context.appTextTheme.headlineSmall
+                            ?.copyWith(color: AppColors.onSurface),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

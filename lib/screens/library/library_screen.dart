@@ -21,7 +21,14 @@ class LibraryScreen extends StatelessWidget {
           bottom: false,
           child: Column(
             children: [
-              const BrkHeader(title: 'BreakLog', actions: [TopBarActions()]),
+              BrkHeader(
+                title: 'BreakLog',
+                mark: Image.asset(
+                  'assets/images/breaklog_logo.png',
+                  height: 26,
+                ),
+                actions: const [TopBarActions()],
+              ),
               Container(
                 color: AppColors.surface,
                 child: const TabBar(

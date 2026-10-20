@@ -23,6 +23,8 @@ class AboutScreen extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(20, 4, 20, 40),
                 children: [
+                  Image.asset('assets/images/breaklog_logo.png', height: 56),
+                  const SizedBox(height: 14),
                   Text('BreakLog', style: context.appTextTheme.displayLarge),
                   const SizedBox(height: 4),
                   Text('A personal bboy move log.',
