@@ -66,6 +66,7 @@ class _AddEditMoveScreenState extends State<AddEditMoveScreen> {
             children: [
               BrkHeader(
                 title: _isEdit ? 'Edit move' : 'Log move',
+                mark: const BrkBrandMark(),
                 leading: Icons.arrow_back,
                 onLeading: () => Navigator.of(context).maybePop(),
               ),

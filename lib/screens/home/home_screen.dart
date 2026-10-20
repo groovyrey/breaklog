@@ -65,7 +65,11 @@ class _HomeScreenState extends State<HomeScreen> {
         bottom: false,
         child: Column(
           children: [
-            const BrkHeader(title: 'Home', actions: [TopBarActions()]),
+            const BrkHeader(
+              title: 'Home',
+              mark: BrkBrandMark(),
+              actions: [TopBarActions()],
+            ),
             Expanded(
               child: ListView(
                 padding: EdgeInsets.only(bottom: brkFloatingBarInset(context)),

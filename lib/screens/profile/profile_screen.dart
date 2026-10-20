@@ -85,6 +85,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             BrkHeader(
               title: 'Profile',
+              mark: const BrkBrandMark(),
               leading: Icons.arrow_back,
               onLeading: () => Navigator.of(context).maybePop(),
             ),

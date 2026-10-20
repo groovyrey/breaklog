@@ -29,6 +29,7 @@ class MoveDetailScreen extends StatelessWidget {
             children: [
               BrkHeader(
                 title: 'Move',
+                mark: const BrkBrandMark(),
                 leading: Icons.arrow_back,
                 onLeading: () => Navigator.of(context).maybePop(),
               ),
@@ -53,6 +54,7 @@ class MoveDetailScreen extends StatelessWidget {
             BrkHeader(
               eyebrow: move.category.isEmpty ? null : move.category,
               title: move.name,
+              mark: const BrkBrandMark(),
               leading: Icons.arrow_back,
               onLeading: () => Navigator.of(context).maybePop(),
               actions: [

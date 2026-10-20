@@ -19,7 +19,11 @@ class BattleScreen extends StatelessWidget {
           bottom: false,
           child: Column(
             children: [
-              const BrkHeader(title: 'Battle', actions: [TopBarActions()]),
+              const BrkHeader(
+                title: 'Battle',
+                mark: BrkBrandMark(),
+                actions: [TopBarActions()],
+              ),
               Container(
                 color: AppColors.surface,
                 child: const TabBar(

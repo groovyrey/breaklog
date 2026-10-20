@@ -30,6 +30,7 @@ class SetDetailScreen extends StatelessWidget {
             children: [
               BrkHeader(
                 title: 'Set',
+                mark: const BrkBrandMark(),
                 leading: Icons.arrow_back,
                 onLeading: () => Navigator.of(context).maybePop(),
               ),
@@ -57,6 +58,7 @@ class SetDetailScreen extends StatelessWidget {
           children: [
             BrkHeader(
               title: set.name,
+              mark: const BrkBrandMark(),
               eyebrow: moves.isEmpty ? 'empty set' : '${moves.length} moves',
               leading: Icons.arrow_back,
               onLeading: () => Navigator.of(context).maybePop(),

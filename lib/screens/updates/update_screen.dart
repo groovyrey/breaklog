@@ -23,6 +23,7 @@ class UpdateScreen extends StatelessWidget {
           children: [
             BrkHeader(
               title: 'Updates',
+              mark: const BrkBrandMark(),
               leading: Icons.arrow_back,
               onLeading: () => Navigator.of(context).maybePop(),
             ),

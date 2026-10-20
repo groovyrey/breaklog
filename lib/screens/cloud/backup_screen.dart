@@ -66,6 +66,7 @@ class _BackupScreenState extends State<BackupScreen> {
           children: [
             BrkHeader(
               title: 'Media backup',
+              mark: const BrkBrandMark(),
               leading: Icons.arrow_back,
               onLeading: () => Navigator.of(context).maybePop(),
             ),

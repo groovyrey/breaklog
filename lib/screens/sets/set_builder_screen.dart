@@ -55,6 +55,7 @@ class _SetBuilderScreenState extends State<SetBuilderScreen> {
           children: [
             BrkHeader(
               title: _isEdit ? 'Edit set' : 'New set',
+              mark: const BrkBrandMark(),
               leading: Icons.arrow_back,
               onLeading: () => Navigator.of(context).maybePop(),
               actions: [

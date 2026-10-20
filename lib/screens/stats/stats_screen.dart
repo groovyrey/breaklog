@@ -31,6 +31,7 @@ class StatsScreen extends StatelessWidget {
           children: [
             BrkHeader(
               title: 'Stats',
+              mark: const BrkBrandMark(),
               eyebrow: total == 0 ? 'nothing logged yet' : '$total moves',
               leading: Icons.arrow_back,
               onLeading: () => Navigator.of(context).maybePop(),

@@ -16,7 +16,11 @@ class BookScreen extends StatelessWidget {
         bottom: false,
         child: Column(
           children: [
-            const BrkHeader(title: 'Book', actions: [TopBarActions()]),
+            const BrkHeader(
+              title: 'Book',
+              mark: BrkBrandMark(),
+              actions: [TopBarActions()],
+            ),
             const Expanded(
               child: BrkEmptyState(
                 icon: Icons.menu_book_outlined,

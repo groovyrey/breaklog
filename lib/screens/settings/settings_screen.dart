@@ -42,6 +42,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             BrkHeader(
               title: 'Settings',
+              mark: const BrkBrandMark(),
               leading: Icons.arrow_back,
               onLeading: () => Navigator.of(context).maybePop(),
             ),

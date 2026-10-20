@@ -16,6 +16,7 @@ class AboutScreen extends StatelessWidget {
           children: [
             BrkHeader(
               title: 'About',
+              mark: const BrkBrandMark(),
               leading: Icons.arrow_back,
               onLeading: () => Navigator.of(context).maybePop(),
             ),
@@ -23,7 +24,7 @@ class AboutScreen extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(20, 4, 20, 40),
                 children: [
-                  Image.asset('assets/images/breaklog_logo.png', height: 56),
+                  const BrkBrandMark(height: 56),
                   const SizedBox(height: 14),
                   Text('BreakLog', style: context.appTextTheme.displayLarge),
                   const SizedBox(height: 4),

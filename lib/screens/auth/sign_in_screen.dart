@@ -6,6 +6,9 @@ import '../../state/app_state.dart';
 import '../../theme/app_theme.dart';
 
 /// The wall in front of the library. One way in: a Google account.
+///
+/// The brand sits centered at the top, the sign in action sits in its own card
+/// below it, and the partner card closes the screen.
 class SignInScreen extends StatelessWidget {
   const SignInScreen({super.key});
 
@@ -19,48 +22,55 @@ class SignInScreen extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 28),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Spacer(flex: 2),
-              Image.asset(
-                'assets/images/breaklog_logo.png',
-                height: 52,
-              ),
-              const SizedBox(height: 16),
+              const BrkBrandMark(height: 108),
+              const SizedBox(height: 24),
               Text(
                 'BreakLog',
+                textAlign: TextAlign.center,
                 style: context.appTextTheme.displayLarge
                     ?.copyWith(color: AppColors.onSurface),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
               Text(
                 'A personal log for your bboy moves.',
+                textAlign: TextAlign.center,
                 style: context.appTextTheme.bodyLarge
                     ?.copyWith(color: AppColors.onSurfaceVariant),
               ),
-              const Spacer(flex: 3),
-              BrkButton(
-                label: 'Continue with Google',
-                variant: BrkButtonVariant.light,
-                leading: Image.asset(
-                  'assets/images/google_g.png',
-                  width: 18,
-                  height: 18,
+              const Spacer(flex: 2),
+              BrkCard(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  children: [
+                    BrkButton(
+                      label: 'Continue with Google',
+                      variant: BrkButtonVariant.light,
+                      leading: Image.asset(
+                        'assets/images/google_g.png',
+                        width: 18,
+                        height: 18,
+                      ),
+                      loading: auth.busy,
+                      onPressed: () => auth.signIn(),
+                    ),
+                    if (auth.error != null) ...[
+                      const SizedBox(height: 14),
+                      Text(
+                        auth.error!,
+                        textAlign: TextAlign.center,
+                        style: context.appTextTheme.bodySmall
+                            ?.copyWith(color: AppColors.error),
+                      ),
+                    ],
+                  ],
                 ),
-                loading: auth.busy,
-                onPressed: () => auth.signIn(),
               ),
-              if (auth.error != null) ...[
-                const SizedBox(height: 14),
-                Text(
-                  auth.error!,
-                  style: context.appTextTheme.bodySmall
-                      ?.copyWith(color: AppColors.error),
-                ),
-              ],
-              const SizedBox(height: 20),
+              const SizedBox(height: 26),
               Text(
                 'Presented to you by',
+                textAlign: TextAlign.center,
                 style: context.appTextTheme.bodySmall
                     ?.copyWith(color: AppColors.onSurfaceVariant),
               ),

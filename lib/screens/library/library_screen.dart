@@ -22,11 +22,8 @@ class LibraryScreen extends StatelessWidget {
           child: Column(
             children: [
               BrkHeader(
-                title: 'BreakLog',
-                mark: Image.asset(
-                  'assets/images/breaklog_logo.png',
-                  height: 26,
-                ),
+                title: 'Library',
+                mark: const BrkBrandMark(),
                 actions: const [TopBarActions()],
               ),
               Container(
