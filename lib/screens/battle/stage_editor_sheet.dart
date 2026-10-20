@@ -30,7 +30,7 @@ class StageEditorSheet extends StatefulWidget {
 
 class _StageEditorSheetState extends State<StageEditorSheet> {
   late int _rounds = widget.stage.rounds;
-  late List<String> _planIds = [...widget.stage.planIds];
+  late final List<String> _planIds = [...widget.stage.planIds];
 
   @override
   Widget build(BuildContext context) {

@@ -8,7 +8,7 @@ const List<BattleStage> defaultBattleStages = [
   BattleStage.top16,
   BattleStage.quarterfinal,
   BattleStage.semifinal,
-  BattleStage.final,
+  BattleStage.grandFinal,
 ];
 
 /// Everything a user can put on a plan, so adding a stage offers each once.
@@ -18,7 +18,7 @@ const List<BattleStage> allBattleStages = [
   BattleStage.top16,
   BattleStage.quarterfinal,
   BattleStage.semifinal,
-  BattleStage.final,
+  BattleStage.grandFinal,
 ];
 
 const Map<BattleStage, String> battleStageLabels = {
@@ -27,7 +27,7 @@ const Map<BattleStage, String> battleStageLabels = {
   BattleStage.top16: 'Top 16',
   BattleStage.quarterfinal: 'Quarterfinal',
   BattleStage.semifinal: 'Semifinal',
-  BattleStage.final: 'Final',
+  BattleStage.grandFinal: 'Final',
 };
 
 /// Rounds an event usually runs at each stage, used as the starting point the
@@ -38,7 +38,7 @@ const Map<BattleStage, int> defaultBattleRounds = {
   BattleStage.top16: 1,
   BattleStage.quarterfinal: 2,
   BattleStage.semifinal: 2,
-  BattleStage.final: 3,
+  BattleStage.grandFinal: 3,
 };
 
 String battleStageLabel(BattleStage stage) => battleStageLabels[stage]!;

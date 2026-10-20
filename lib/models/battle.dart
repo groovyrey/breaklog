@@ -1,12 +1,13 @@
 /// A stage of an event, in bracket order. Only the stages a user adds to their
-/// plan matter, so this is deliberately not the full event vocabulary.
+/// plan matter, so this is deliberately not the full event vocabulary. The
+/// closing stage is [grandFinal]; `final` is a reserved word and cannot name it.
 enum BattleStage {
   prelims,
   top32,
   top16,
   quarterfinal,
   semifinal,
-  final,
+  grandFinal,
 }
 
 /// What the user plans to bring to one stage: how many rounds it runs and which

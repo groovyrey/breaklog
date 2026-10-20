@@ -334,7 +334,7 @@ void main() {
         stages: const [
           PlannedStage(stage: BattleStage.prelims, rounds: 1),
           PlannedStage(
-            stage: BattleStage.final,
+            stage: BattleStage.grandFinal,
             rounds: 3,
             planIds: ['m1', 's1'],
           ),
