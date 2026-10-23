@@ -8,28 +8,47 @@ import 'media_store.dart';
 /// when the run ends.
 class SessionRecorder {
   CameraController? _controller;
+  List<CameraDescription> _cameras = const [];
+  int _index = 0;
   bool _recording = false;
 
   CameraController? get controller => _controller;
   bool get ready => _controller?.value.isInitialized ?? false;
   bool get recording => _recording;
+  bool get canFlip => _cameras.length > 1;
 
   Future<void> initialize() async {
-    final cameras = await availableCameras();
-    if (cameras.isEmpty) {
+    _cameras = await availableCameras();
+    if (_cameras.isEmpty) {
       throw const SessionRecorderException('No camera is available on this device');
     }
-    final camera = cameras.firstWhere(
-      (camera) => camera.lensDirection == CameraLensDirection.back,
-      orElse: () => cameras.first,
-    );
+    final front =
+        _cameras.indexWhere((c) => c.lensDirection == CameraLensDirection.front);
+    _index = front < 0 ? 0 : front;
+    await _open();
+  }
+
+  Future<void> _open() async {
     final controller = CameraController(
-      camera,
+      _cameras[_index],
       ResolutionPreset.high,
       enableAudio: true,
     );
     _controller = controller;
     await controller.initialize();
+  }
+
+  /// Swaps to the other lens. Only valid while no clip is being recorded.
+  Future<void> flip() async {
+    if (!canFlip || _recording) return;
+    final current = _cameras[_index].lensDirection;
+    var next = _cameras.indexWhere((c) => c.lensDirection != current);
+    if (next < 0) next = (_index + 1) % _cameras.length;
+    final previous = _controller;
+    _controller = null;
+    await previous?.dispose();
+    _index = next;
+    await _open();
   }
 
   Future<void> start() async {

@@ -141,10 +141,15 @@ class _BrkVideoViewerState extends State<_BrkVideoViewer> {
               GestureDetector(
                 onTap: _togglePlayback,
                 behavior: HitTestBehavior.opaque,
-                child: Center(
-                  child: AspectRatio(
-                    aspectRatio: _controller.value.aspectRatio,
-                    child: VideoPlayer(_controller),
+                child: SizedBox.expand(
+                  child: FittedBox(
+                    fit: BoxFit.cover,
+                    clipBehavior: Clip.hardEdge,
+                    child: SizedBox(
+                      width: _controller.value.size.width,
+                      height: _controller.value.size.height,
+                      child: VideoPlayer(_controller),
+                    ),
                   ),
                 ),
               ),

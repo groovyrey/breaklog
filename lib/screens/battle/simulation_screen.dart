@@ -54,7 +54,7 @@ class _SimulationScreenState extends State<SimulationScreen> {
   void initState() {
     super.initState();
     _engine.addListener(_onEngineChanged);
-    if (widget.record) unawaited(_initCamera());
+    unawaited(_initCamera());
   }
 
   Future<void> _initCamera() async {
@@ -73,8 +73,24 @@ class _SimulationScreenState extends State<SimulationScreen> {
     if (_engine.finished) unawaited(_finish());
   }
 
+  Future<void> _flipCamera() async {
+    if (_recorder.recording || !_recorder.canFlip) return;
+    setState(() {
+      _cameraLoading = true;
+      _cameraFailed = false;
+    });
+    try {
+      await _recorder.flip();
+    } catch (error) {
+      debugPrint('Switching camera failed: $error');
+      if (mounted) setState(() => _cameraFailed = true);
+    } finally {
+      if (mounted) setState(() => _cameraLoading = false);
+    }
+  }
+
   Future<void> _togglePlay() async {
-    if (_engine.finished || _cameraLoading) return;
+    if (_engine.finished || (widget.record && _cameraLoading)) return;
 
     if (_engine.running) {
       _engine.pause();
@@ -206,18 +222,16 @@ class _SimulationScreenState extends State<SimulationScreen> {
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
                   child: Column(
                     children: [
-                      if (widget.record) ...[
-                        Expanded(
-                          flex: 5,
-                          child: SimulationCameraView(
-                            loading: _cameraLoading,
-                            failed: _cameraFailed,
-                            controller: _recorder.controller,
-                          ),
+                      Expanded(
+                        flex: 5,
+                        child: SimulationCameraView(
+                          loading: _cameraLoading,
+                          failed: _cameraFailed,
+                          controller: _recorder.controller,
+                          onFlip: _recorder.recording ? null : _flipCamera,
                         ),
-                        const SizedBox(height: 18),
-                      ] else
-                        const Spacer(),
+                      ),
+                      const SizedBox(height: 18),
                       ListenableBuilder(
                         listenable: _engine,
                         builder: (context, _) =>
@@ -252,7 +266,7 @@ class _SimulationScreenState extends State<SimulationScreen> {
           BrkButton(
             label: running ? 'Pause' : 'Play',
             icon: running ? Icons.pause : Icons.play_arrow,
-            onPressed: _cameraLoading ? null : _togglePlay,
+            onPressed: widget.record && _cameraLoading ? null : _togglePlay,
           ),
         if (!running) ...[
           if (!done) const SizedBox(height: 10),

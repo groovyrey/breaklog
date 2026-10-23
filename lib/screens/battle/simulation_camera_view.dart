@@ -12,11 +12,13 @@ class SimulationCameraView extends StatelessWidget {
     required this.loading,
     required this.failed,
     required this.controller,
+    required this.onFlip,
   });
 
   final bool loading;
   final bool failed;
   final CameraController? controller;
+  final VoidCallback? onFlip;
 
   @override
   Widget build(BuildContext context) {
@@ -41,10 +43,53 @@ class SimulationCameraView extends StatelessWidget {
       );
     }
     if (controller == null) return const SizedBox.shrink();
-    return Center(
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        child: CameraPreview(controller!),
+
+    final ratio = controller!.value.aspectRatio;
+    final landscape = MediaQuery.orientationOf(context) == Orientation.landscape;
+    final displayRatio = ratio <= 0 ? 1.0 : (landscape ? ratio : 1 / ratio);
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppRadius.card),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          FittedBox(
+            fit: BoxFit.cover,
+            clipBehavior: Clip.hardEdge,
+            child: SizedBox(
+              width: 1000,
+              height: 1000 / displayRatio,
+              child: CameraPreview(controller!),
+            ),
+          ),
+          Positioned(
+            top: 8,
+            right: 8,
+            child: Tooltip(
+              message: 'Flip camera',
+              child: GestureDetector(
+                onTap: onFlip,
+                behavior: HitTestBehavior.opaque,
+                child: Opacity(
+                  opacity: onFlip == null ? 0.42 : 1,
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.surfaceVariant,
+                    ),
+                    child: const Icon(
+                      Icons.flip_camera_ios_outlined,
+                      size: 20,
+                      color: AppColors.onSurface,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
