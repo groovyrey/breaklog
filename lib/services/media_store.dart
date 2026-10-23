@@ -49,6 +49,17 @@ class MediaStore {
       value.length <= 5 &&
       RegExp(r'^[a-z0-9]+$').hasMatch(value);
 
+  /// A fresh path in the media folder for a file the app writes itself, such as
+  /// an audio recording. The folder is created when missing.
+  static Future<String> allocate(String extension) async {
+    final docs = await getApplicationDocumentsDirectory();
+    final dir = Directory('${docs.path}/$_folder');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return '${dir.path}/${DateTime.now().microsecondsSinceEpoch}.$extension';
+  }
+
   static Future<void> remove(String path) async {
     if (path.startsWith('http')) return;
     try {

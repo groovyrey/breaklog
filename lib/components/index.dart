@@ -1,5 +1,6 @@
 export 'brk_avatar.dart';
 export 'brk_accordion.dart';
+export 'brk_audio_viewer.dart';
 export 'brk_brand_mark.dart';
 export 'brk_button.dart';
 export 'brk_choice.dart';

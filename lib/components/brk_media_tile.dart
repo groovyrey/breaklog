@@ -26,6 +26,7 @@ class BrkMediaTile extends StatelessWidget {
         MediaKind.video => Icons.movie_outlined,
         MediaKind.record => Icons.videocam_outlined,
         MediaKind.photo => Icons.photo_outlined,
+        MediaKind.voice => Icons.mic_none,
       };
 
   String get _title {
@@ -35,11 +36,13 @@ class BrkMediaTile extends StatelessWidget {
   }
 
   String get _subtitle {
-    if (media.isRemote) return '${media.kind.label} · opens in browser';
-    if (media.kind == MediaKind.video || media.kind == MediaKind.record) {
-      return '${media.kind.label} · tap to play';
+    if (media.isRemote) return '${media.kind.label}, opens in browser';
+    if (media.kind == MediaKind.video ||
+        media.kind == MediaKind.record ||
+        media.kind == MediaKind.voice) {
+      return '${media.kind.label}, tap to play';
     }
-    return '${media.kind.label} · saved on this device';
+    return '${media.kind.label}, saved on this device';
   }
 
   @override

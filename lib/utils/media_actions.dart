@@ -17,6 +17,8 @@ void openMedia(BuildContext context, MoveMedia media) {
     case MediaKind.video:
     case MediaKind.record:
       showBrkVideoViewer(context, media.value);
+    case MediaKind.voice:
+      showBrkAudioViewer(context, media.value);
     case MediaKind.link:
       break;
   }

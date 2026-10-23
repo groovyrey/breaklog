@@ -3,7 +3,8 @@ enum MediaKind {
   link('Link'),
   video('Video'),
   record('Record'),
-  photo('Photo');
+  photo('Photo'),
+  voice('Voice');
 
   const MediaKind(this.label);
 

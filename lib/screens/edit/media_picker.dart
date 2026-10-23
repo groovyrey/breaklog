@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../components/index.dart';
 import '../../models/media.dart';
 import '../../services/media_store.dart';
+import 'voice_note_sheet.dart';
 
 /// Runs the attachment flow and returns a ready-to-save [MoveMedia], or null
 /// when the user backs out. Every kind is offered through our own sheet.
@@ -31,6 +32,12 @@ Future<MoveMedia?> pickBrkMedia(BuildContext context) async {
             subtitle: 'Film a clip now',
             icon: Icons.videocam_outlined,
             onTap: () => Navigator.of(ctx).pop('record'),
+          ),
+          BrkOptionTile(
+            title: 'Voice note',
+            subtitle: 'Record audio on this device',
+            icon: Icons.mic_none,
+            onTap: () => Navigator.of(ctx).pop('voice'),
           ),
           BrkOptionTile(
             title: 'Photo',
@@ -62,6 +69,8 @@ Future<MoveMedia?> pickBrkMedia(BuildContext context) async {
         source: ImageSource.camera,
         kind: MediaKind.record,
       );
+    case 'voice':
+      return showVoiceNoteSheet(context);
     default:
       return _choosePhotoSource(context);
   }

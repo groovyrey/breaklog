@@ -1,10 +1,12 @@
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:intl/intl.dart';
 
+import 'package:breaklog/components/brk_sheet.dart';
 import 'package:breaklog/constants/practice_reminder_messages.dart';
 import 'package:breaklog/models/battle.dart';
 import 'package:breaklog/models/category.dart';
@@ -603,6 +605,69 @@ void main() {
           'Insufficient permission',
         )),
       );
+    });
+  });
+
+  group('voice note', () {
+    test('keeps the voice kind through a note round trip', () {
+      final note = LogNote(
+        id: 'n1',
+        body: 'Recorded the first round.',
+        createdAt: DateTime.utc(2026, 10, 20, 4, 30),
+        media: const [
+          MoveMedia(
+            id: 'v1',
+            kind: MediaKind.voice,
+            value: '/data/breaklog_media/1.m4a',
+          ),
+        ],
+      );
+
+      final back = LogNote.fromJson(jsonDecode(jsonEncode(note.toJson())));
+
+      expect(back.media.single.kind, MediaKind.voice);
+      expect(back.media.single.value, '/data/breaklog_media/1.m4a');
+      expect(MediaKind.voice.label, 'Voice');
+    });
+  });
+
+  group('sheet keyboard inset', () {
+    testWidgets('keeps the panel above the keyboard', (tester) async {
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MediaQuery(
+            data: const MediaQueryData(
+              size: Size(400, 800),
+              viewInsets: EdgeInsets.only(bottom: 300),
+            ),
+            child: const Scaffold(
+              body: Align(
+                alignment: Alignment.bottomCenter,
+                child: BrkSheet(
+                  title: 'Test',
+                  child: SizedBox(height: 80),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final panel = tester.getRect(
+        find
+            .descendant(
+              of: find.byType(BrkSheet),
+              matching: find.byType(Container),
+            )
+            .first,
+      );
+
+      expect(panel.bottom, lessThanOrEqualTo(500.5));
     });
   });
 }

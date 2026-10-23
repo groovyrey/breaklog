@@ -19,10 +19,16 @@ class BrkDialogRoute<T> extends RawDialogRoute<T> {
     required WidgetBuilder builder,
     super.barrierDismissible,
   }) : super(
-          pageBuilder: (context, _, __) => Align(
+        pageBuilder: (context, _, __) => Padding(
+          // Keep the panel above the keyboard on its own: a dialog route is
+          // not resized by a Scaffold the way a normal screen is.
+          padding:
+              EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+          child: Align(
             alignment: Alignment.center,
             child: builder(context),
           ),
+        ),
           barrierLabel: 'Dismiss',
           barrierColor: Colors.black54,
           transitionDuration: const Duration(milliseconds: 180),
