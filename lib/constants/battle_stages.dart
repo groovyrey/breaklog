@@ -12,6 +12,8 @@ const List<BattleStage> defaultBattleStages = [
 ];
 
 /// Everything a user can put on a plan, so adding a stage offers each once.
+/// [BattleStage.extra] is not in the opening plan; it is there for anything an
+/// event adds outside the usual bracket.
 const List<BattleStage> allBattleStages = [
   BattleStage.prelims,
   BattleStage.top32,
@@ -19,6 +21,7 @@ const List<BattleStage> allBattleStages = [
   BattleStage.quarterfinal,
   BattleStage.semifinal,
   BattleStage.grandFinal,
+  BattleStage.extra,
 ];
 
 const Map<BattleStage, String> battleStageLabels = {
@@ -28,6 +31,7 @@ const Map<BattleStage, String> battleStageLabels = {
   BattleStage.quarterfinal: 'Quarterfinal',
   BattleStage.semifinal: 'Semifinal',
   BattleStage.grandFinal: 'Final',
+  BattleStage.extra: 'Extra',
 };
 
 /// Rounds an event usually runs at each stage, used as the starting point the
@@ -39,6 +43,7 @@ const Map<BattleStage, int> defaultBattleRounds = {
   BattleStage.quarterfinal: 2,
   BattleStage.semifinal: 2,
   BattleStage.grandFinal: 3,
+  BattleStage.extra: 1,
 };
 
 String battleStageLabel(BattleStage stage) => battleStageLabels[stage]!;

@@ -29,7 +29,7 @@ class StageEditorSheet extends StatefulWidget {
 }
 
 class _StageEditorSheetState extends State<StageEditorSheet> {
-  late int _rounds = widget.stage.rounds;
+  late int _rounds = widget.stage.rounds.clamp(1, maxBattleRounds).toInt();
   late final List<String> _planIds = [...widget.stage.planIds];
 
   @override
@@ -64,7 +64,9 @@ class _StageEditorSheetState extends State<StageEditorSheet> {
                 const SizedBox(width: 6),
                 BrkIconButton(
                   icon: Icons.add,
-                  onTap: () => setState(() => _rounds++),
+                  onTap: _rounds < maxBattleRounds
+                      ? () => setState(() => _rounds++)
+                      : null,
                 ),
               ],
             ),

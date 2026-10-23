@@ -1,3 +1,6 @@
+/// The most rounds a stage can run in a plan. Simulation follows the same cap.
+const int maxBattleRounds = 5;
+
 /// A stage of an event, in bracket order. Only the stages a user adds to their
 /// plan matter, so this is deliberately not the full event vocabulary. The
 /// closing stage is [grandFinal]; `final` is a reserved word and cannot name it.
@@ -8,6 +11,7 @@ enum BattleStage {
   quarterfinal,
   semifinal,
   grandFinal,
+  extra,
 }
 
 /// What the user plans to bring to one stage: how many rounds it runs and which
@@ -28,8 +32,10 @@ class PlannedStage {
   final List<String> planIds;
 
   factory PlannedStage.fromJson(Map<String, dynamic> json) => PlannedStage(
-        stage: _stageFromName(json['stage'] as String?),
-        rounds: (json['rounds'] as num?)?.toInt() ?? 1,
+        stage: battleStageFromName(json['stage'] as String?),
+        rounds: ((json['rounds'] as num?)?.toInt() ?? 1)
+            .clamp(1, maxBattleRounds)
+            .toInt(),
         planIds: (json['planIds'] as List<dynamic>? ?? [])
             .whereType<String>()
             .toList(),
@@ -46,33 +52,33 @@ class PlannedStage {
         rounds: rounds ?? this.rounds,
         planIds: planIds ?? this.planIds,
       );
-
-  /// Reads a stored stage name. Storage written by a newer build can name a
-  /// stage this build does not know, which reads as prelims rather than
-  /// dropping the whole row.
-  static BattleStage _stageFromName(String? name) =>
-      BattleStage.values.firstWhere(
-        (value) => value.name == name,
-        orElse: () => BattleStage.prelims,
-      );
 }
 
-/// The one battle plan the user is working on: the event, and what to do at
-/// each stage of it.
+/// Resolves a stored stage name, falling back to prelims so an unknown name
+/// never drops the row that carried it.
+BattleStage battleStageFromName(String? name) => BattleStage.values.firstWhere(
+      (value) => value.name == name,
+      orElse: () => BattleStage.prelims,
+    );
+
+/// One battle plan: the event, and what to do at each stage of it.
 class BattlePlan {
   const BattlePlan({
+    required this.id,
     required this.name,
     required this.eventAt,
     required this.stages,
     required this.updatedAt,
   });
 
+  final String id;
   final String name;
   final DateTime eventAt;
   final List<PlannedStage> stages;
   final DateTime updatedAt;
 
   factory BattlePlan.fromJson(Map<String, dynamic> json) => BattlePlan(
+        id: json['id'] as String? ?? '',
         name: json['name'] as String? ?? '',
         eventAt: DateTime.tryParse(json['eventAt'] as String? ?? '') ??
             DateTime.now(),
@@ -85,6 +91,7 @@ class BattlePlan {
       );
 
   Map<String, dynamic> toJson() => {
+        'id': id,
         'name': name,
         'eventAt': eventAt.toIso8601String(),
         'stages': stages.map((s) => s.toJson()).toList(),
@@ -92,12 +99,14 @@ class BattlePlan {
       };
 
   BattlePlan copyWith({
+    String? id,
     String? name,
     DateTime? eventAt,
     List<PlannedStage>? stages,
     DateTime? updatedAt,
   }) =>
       BattlePlan(
+        id: id ?? this.id,
         name: name ?? this.name,
         eventAt: eventAt ?? this.eventAt,
         stages: stages ?? this.stages,

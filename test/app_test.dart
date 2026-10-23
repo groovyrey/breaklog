@@ -5,26 +5,35 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:breaklog/components/brk_sheet.dart';
+import 'package:breaklog/constants/battle_stages.dart';
 import 'package:breaklog/constants/practice_reminder_messages.dart';
 import 'package:breaklog/models/battle.dart';
+import 'package:breaklog/models/battle_session.dart';
 import 'package:breaklog/models/category.dart';
 import 'package:breaklog/models/media.dart';
 import 'package:breaklog/models/move.dart';
 import 'package:breaklog/models/note.dart';
 import 'package:breaklog/models/prep_item.dart';
 import 'package:breaklog/models/set.dart';
+import 'package:breaklog/services/battle_repository.dart';
+import 'package:breaklog/services/battle_session_repository.dart';
+import 'package:breaklog/services/simulation_engine.dart';
 import 'package:breaklog/services/breaklog_api.dart';
 import 'package:breaklog/services/drive_backup.dart';
 import 'package:breaklog/services/version_checker.dart';
 import 'package:breaklog/state/update_notifier.dart';
 import 'package:breaklog/utils/battle_countdown.dart';
 import 'package:breaklog/utils/cooldown_notice.dart';
+import 'package:breaklog/utils/duration_label.dart';
 import 'package:breaklog/utils/reminder_times.dart';
 import 'package:breaklog/utils/semver.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('version checker', () {
     http.Client releasesResponse(List<Map<String, dynamic>> releases) {
       return MockClient((request) async {
@@ -330,6 +339,7 @@ void main() {
   group('battle plan', () {
     test('round-trips its name, date and stages through JSON', () {
       final plan = BattlePlan(
+        id: 'p1',
         name: 'Summer Jam',
         eventAt: DateTime.utc(2026, 8, 1, 18),
         updatedAt: DateTime.utc(2026, 6, 1),
@@ -345,6 +355,7 @@ void main() {
 
       final back = BattlePlan.fromJson(jsonDecode(jsonEncode(plan.toJson())));
 
+      expect(back.id, 'p1');
       expect(back.name, 'Summer Jam');
       expect(back.eventAt, DateTime.utc(2026, 8, 1, 18));
       expect(back.stages.length, 2);
@@ -355,6 +366,7 @@ void main() {
 
     test('removes a stage and appends one at the end', () {
       final plan = BattlePlan(
+        id: 'p2',
         name: 'Local',
         eventAt: DateTime.utc(2026, 7, 1),
         updatedAt: DateTime.utc(2026, 6, 1),
@@ -368,6 +380,214 @@ void main() {
 
       expect(seeded.stages.length, 1);
       expect(seeded.stages.single.stage, BattleStage.top16);
+    });
+
+    test('offers Extra without putting it on a new plan', () {
+      expect(allBattleStages, contains(BattleStage.extra));
+      expect(defaultBattleStages, isNot(contains(BattleStage.extra)));
+      expect(battleStageLabel(BattleStage.extra), 'Extra');
+      expect(defaultRoundsFor(BattleStage.extra), 1);
+    });
+
+    test('caps stored rounds at the simulation limit', () {
+      final stage = PlannedStage.fromJson({
+        'stage': 'prelims',
+        'rounds': 9,
+      });
+
+      expect(maxBattleRounds, 5);
+      expect(stage.rounds, maxBattleRounds);
+    });
+  });
+
+  group('battle repository', () {
+    test('keeps several plans and updates them by id', () async {
+      SharedPreferences.setMockInitialValues({});
+      final repo = BattleRepository();
+      await repo.load();
+
+      final first =
+          await repo.start(name: 'First', eventAt: DateTime(2026, 9, 1));
+      final second =
+          await repo.start(name: 'Second', eventAt: DateTime(2026, 7, 1));
+
+      expect(repo.plans.length, 2);
+      expect(repo.plans.first.id, second.id);
+
+      await repo.save(first.copyWith(name: 'Renamed'));
+
+      expect(repo.byId(first.id)?.name, 'Renamed');
+      expect(repo.plans.length, 2);
+
+      await repo.remove(second.id);
+
+      expect(repo.plans.single.id, first.id);
+    });
+
+    test('migrates the old single plan into the list', () async {
+      final legacy = BattlePlan(
+        id: '',
+        name: 'Old battle',
+        eventAt: DateTime(2026, 8, 1),
+        stages: const [],
+        updatedAt: DateTime(2026, 6, 1),
+      );
+      SharedPreferences.setMockInitialValues({
+        'breaklog_battle_plan_v1': jsonEncode(legacy.toJson()),
+      });
+
+      final repo = BattleRepository();
+      await repo.load();
+
+      expect(repo.plans.single.name, 'Old battle');
+      expect(repo.plans.single.id, isNotEmpty);
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('breaklog_battle_plan_v1'), isNull);
+      expect(prefs.getString('breaklog_battle_plans_v1'), contains('Old battle'));
+    });
+  });
+
+  group('battle session', () {
+    test('round-trips selected stages and timings through JSON', () {
+      final session = BattleSession(
+        id: 's1',
+        planId: 'p1',
+        stages: const [
+          SessionStage(stage: BattleStage.prelims, rounds: 2),
+          SessionStage(stage: BattleStage.grandFinal, rounds: 3),
+        ],
+        turnSeconds: 30,
+        restSeconds: 15,
+        elapsedSeconds: 75,
+        recordedAt: DateTime.utc(2026, 8, 2, 10),
+        videoPath: '/data/breaklog_media/run.mp4',
+      );
+
+      final back = BattleSession.fromJson(jsonDecode(jsonEncode(session.toJson())));
+
+      expect(back.id, 's1');
+      expect(back.planId, 'p1');
+      expect(back.stages.length, 2);
+      expect(back.stages.last.stage, BattleStage.grandFinal);
+      expect(back.totalRounds, 5);
+      expect(back.turnSeconds, 30);
+      expect(back.restSeconds, 15);
+      expect(back.elapsedSeconds, 75);
+      expect(back.videoPath, '/data/breaklog_media/run.mp4');
+    });
+
+    test('keeps sessions per plan and drops them with the plan', () async {
+      SharedPreferences.setMockInitialValues({});
+      final repo = BattleSessionRepository();
+      await repo.load();
+
+      final session = BattleSession(
+        id: '',
+        planId: 'p1',
+        stages: const [SessionStage(stage: BattleStage.prelims, rounds: 1)],
+        turnSeconds: 30,
+        restSeconds: 15,
+        elapsedSeconds: 45,
+        recordedAt: DateTime(2026, 9, 1),
+        videoPath: '/tmp/run.mp4',
+      );
+
+      await repo.save(session);
+
+      final saved = repo.forPlan('p1').single;
+      expect(saved.id, startsWith('session-'));
+      expect(repo.forPlan('p2'), isEmpty);
+
+      await repo.save(BattleSession(
+        id: saved.id,
+        planId: 'p1',
+        stages: saved.stages,
+        turnSeconds: 20,
+        restSeconds: 10,
+        elapsedSeconds: 30,
+        recordedAt: saved.recordedAt,
+        videoPath: saved.videoPath,
+      ));
+
+      expect(repo.forPlan('p1').single.turnSeconds, 20);
+
+      await repo.removeForPlan('p1');
+
+      expect(repo.forPlan('p1'), isEmpty);
+    });
+  });
+
+  group('simulation engine', () {
+    test('runs each stage turn then rest until the last round', () {
+      final engine = SimulationEngine(
+        stages: const [
+          SessionStage(stage: BattleStage.prelims, rounds: 2),
+          SessionStage(stage: BattleStage.grandFinal, rounds: 1),
+        ],
+        turnSeconds: 10,
+        restSeconds: 5,
+      );
+      expect(engine.totalRounds, 3);
+      engine.play();
+
+      for (var i = 0; i < 10; i++) {
+        engine.advanceSecond();
+      }
+      expect(engine.phase, SimulationPhase.rest);
+      expect(engine.round, 1);
+      expect(engine.remainingSeconds, 5);
+
+      for (var i = 0; i < 5; i++) {
+        engine.advanceSecond();
+      }
+      expect(engine.phase, SimulationPhase.turn);
+      expect(engine.round, 2);
+
+      for (var i = 0; i < 15; i++) {
+        engine.advanceSecond();
+      }
+      expect(engine.stageIndex, 1);
+      expect(engine.currentStage.stage, BattleStage.grandFinal);
+      expect(engine.round, 1);
+
+      for (var i = 0; i < 15; i++) {
+        engine.advanceSecond();
+      }
+      expect(engine.finished, isTrue);
+      expect(engine.running, isFalse);
+      expect(engine.elapsedSeconds, 45);
+      expect(engine.progress, 1);
+
+      engine.dispose();
+    });
+
+    test('stops the clock while paused', () {
+      final engine = SimulationEngine(
+        stages: const [SessionStage(stage: BattleStage.prelims, rounds: 1)],
+        turnSeconds: 10,
+        restSeconds: 5,
+      );
+      engine.play();
+      engine.pause();
+
+      final before = engine.remainingSeconds;
+      engine.advanceSecond();
+
+      expect(engine.running, isFalse);
+      expect(engine.remainingSeconds, before);
+
+      engine.dispose();
+    });
+  });
+
+  group('duration label', () {
+    test('formats clock and session lengths plainly', () {
+      expect(clockLabel(30), '0:30');
+      expect(clockLabel(65), '1:05');
+      expect(sessionLengthLabel(45), '45s');
+      expect(sessionLengthLabel(510), '8m 30s');
+      expect(sessionLengthLabel(600), '10m');
     });
   });
 

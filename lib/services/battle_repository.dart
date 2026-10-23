@@ -6,38 +6,57 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/battle_stages.dart';
 import '../models/battle.dart';
 
-/// Owns the one battle plan the user works on. Persisted as JSON in
+/// Owns the battle plans the user is working on. Persisted as JSON in
 /// shared_preferences, like the rest of the library.
 class BattleRepository extends ChangeNotifier {
-  static const _storageKey = 'breaklog_battle_plan_v1';
+  static const _storageKey = 'breaklog_battle_plans_v1';
+  static const _legacyKey = 'breaklog_battle_plan_v1';
 
-  BattlePlan? _plan;
+  List<BattlePlan> _plans = const [];
   bool _loaded = false;
 
   bool get loaded => _loaded;
 
-  /// The plan being edited, or null when the user has not started one.
-  BattlePlan? get plan => _plan;
+  /// Every plan, nearest event first.
+  List<BattlePlan> get plans {
+    final sorted = [..._plans]..sort((a, b) => a.eventAt.compareTo(b.eventAt));
+    return List.unmodifiable(sorted);
+  }
 
-  bool get hasPlan => _plan != null;
+  BattlePlan? byId(String id) {
+    for (final plan in _plans) {
+      if (plan.id == id) return plan;
+    }
+    return null;
+  }
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_storageKey);
     if (raw != null && raw.isNotEmpty) {
-      try {
-        _plan = BattlePlan.fromJson(jsonDecode(raw) as Map<String, dynamic>);
-      } catch (_) {
-        _plan = null;
+      _plans = _parseList(raw);
+    } else {
+      final legacy = prefs.getString(_legacyKey);
+      final migrated = legacy == null || legacy.isEmpty
+          ? null
+          : _parseOne(legacy);
+      if (migrated != null) {
+        _plans = [migrated];
+        await _persist();
+        await prefs.remove(_legacyKey);
       }
     }
     _loaded = true;
     notifyListeners();
   }
 
-  /// Starts a plan seeded with the common stages, each at its usual rounds.
-  Future<void> start({required String name, required DateTime eventAt}) async {
-    _plan = BattlePlan(
+  /// Adds a plan seeded with the common stages, each at its usual rounds.
+  Future<BattlePlan> start({
+    required String name,
+    required DateTime eventAt,
+  }) async {
+    final plan = BattlePlan(
+      id: _newId(),
       name: name.trim(),
       eventAt: eventAt,
       stages: [
@@ -46,28 +65,64 @@ class BattleRepository extends ChangeNotifier {
       ],
       updatedAt: DateTime.now(),
     );
+    _plans = [plan, ..._plans];
     notifyListeners();
     await _persist();
+    return plan;
   }
 
   Future<void> save(BattlePlan plan) async {
-    _plan = plan.copyWith(updatedAt: DateTime.now());
+    final stamped = plan.copyWith(updatedAt: DateTime.now());
+    final index = _plans.indexWhere((p) => p.id == stamped.id);
+    _plans = index < 0
+        ? [stamped, ..._plans]
+        : ([..._plans]..[index] = stamped);
     notifyListeners();
     await _persist();
   }
 
-  /// Clears the plan so the user can start another one.
-  Future<void> clear() async {
-    _plan = null;
+  Future<void> remove(String id) async {
+    _plans = _plans.where((p) => p.id != id).toList();
     notifyListeners();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_storageKey);
+    await _persist();
   }
 
+  List<BattlePlan> _parseList(String raw) {
+    try {
+      final decoded = jsonDecode(raw) as List<dynamic>;
+      return decoded
+          .whereType<Map<String, dynamic>>()
+          .map(BattlePlan.fromJson)
+          .map(_withId)
+          .toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  BattlePlan? _parseOne(String raw) {
+    try {
+      return _withId(BattlePlan.fromJson(jsonDecode(raw) as Map<String, dynamic>));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Plans written before multiple plans existed have no id.
+  BattlePlan _withId(BattlePlan plan) =>
+      plan.id.isEmpty ? plan.copyWith(id: _newId()) : plan;
+
+  static String _newId() => 'plan-${DateTime.now().microsecondsSinceEpoch}';
+
   Future<void> _persist() async {
-    final plan = _plan;
-    if (plan == null) return;
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_storageKey, jsonEncode(plan.toJson()));
+    if (_plans.isEmpty) {
+      await prefs.remove(_storageKey);
+      return;
+    }
+    await prefs.setString(
+      _storageKey,
+      jsonEncode(_plans.map((plan) => plan.toJson()).toList()),
+    );
   }
 }

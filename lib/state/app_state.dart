@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../config.dart';
 import '../services/auth_service.dart';
 import '../services/battle_repository.dart';
+import '../services/battle_session_repository.dart';
 import '../services/breaklog_api.dart';
 import '../services/category_repository.dart';
 import '../services/move_repository.dart';
@@ -42,6 +43,7 @@ class AppState extends ChangeNotifier {
     SetRepository? sets,
     NoteRepository? notes,
     BattleRepository? battle,
+    BattleSessionRepository? sessions,
     PrepRepository? prep,
     UpdateNotifier? updates,
     AuthService? auth,
@@ -51,6 +53,7 @@ class AppState extends ChangeNotifier {
         sets = sets ?? SetRepository(),
         notes = notes ?? NoteRepository(),
         battle = battle ?? BattleRepository(),
+        sessions = sessions ?? BattleSessionRepository(),
         prep = prep ?? PrepRepository(),
         updateNotifier = updates ?? UpdateNotifier(),
         auth = auth ?? AuthService(),
@@ -63,6 +66,7 @@ class AppState extends ChangeNotifier {
       this.sets,
       this.notes,
       this.battle,
+      this.sessions,
       this.prep,
       updateNotifier,
       this.auth,
@@ -79,8 +83,11 @@ class AppState extends ChangeNotifier {
   /// Journal notes written from Home, on this device only.
   final NoteRepository notes;
 
-  /// The battle plan and its prep checklist, on this device only.
+  /// The battle plans, on this device only.
   final BattleRepository battle;
+
+  /// Recorded simulations, kept apart from the plans they belong to.
+  final BattleSessionRepository sessions;
   final PrepRepository prep;
   final UpdateNotifier updateNotifier;
   final AuthService auth;
@@ -166,6 +173,7 @@ class AppState extends ChangeNotifier {
         sets.load(),
         notes.load(),
         battle.load(),
+        sessions.load(),
         prep.load(),
         auth.init(),
       ]);

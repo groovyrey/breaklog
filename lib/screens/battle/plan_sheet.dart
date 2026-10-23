@@ -7,16 +7,18 @@ import '../../state/app_state.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/battle_countdown.dart';
 
-/// Starts a plan with the common stages, or edits the one already running.
-Future<void> showPlanSheet(BuildContext context) async {
+/// Starts a new plan, or edits [plan] when one is given.
+Future<void> showPlanSheet(BuildContext context, {BattlePlan? plan}) async {
   await showBrkSheet(
     context: context,
-    builder: (_) => const PlanSheet(),
+    builder: (_) => PlanSheet(plan: plan),
   );
 }
 
 class PlanSheet extends StatefulWidget {
-  const PlanSheet({super.key});
+  const PlanSheet({super.key, this.plan});
+
+  final BattlePlan? plan;
 
   @override
   State<PlanSheet> createState() => _PlanSheetState();
@@ -24,7 +26,6 @@ class PlanSheet extends StatefulWidget {
 
 class _PlanSheetState extends State<PlanSheet> {
   late final AppState _state = context.read<AppState>();
-  late final BattlePlan? _existing = _state.battle.plan;
 
   final _name = TextEditingController();
   DateTime _eventAt = DateTime.now().add(const Duration(days: 30));
@@ -34,7 +35,7 @@ class _PlanSheetState extends State<PlanSheet> {
   @override
   void initState() {
     super.initState();
-    final existing = _existing;
+    final existing = widget.plan;
     if (existing != null) {
       _name.text = existing.name;
       _eventAt = existing.eventAt;
@@ -49,7 +50,7 @@ class _PlanSheetState extends State<PlanSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final editing = _existing != null;
+    final editing = widget.plan != null;
 
     return BrkSheet(
       title: editing ? 'Edit battle' : 'New battle',
@@ -114,7 +115,7 @@ class _PlanSheetState extends State<PlanSheet> {
 
   Future<void> _save() async {
     final name = _name.text.trim();
-    final existing = _existing;
+    final existing = widget.plan;
     if (existing == null) {
       await _state.battle.start(name: name, eventAt: _eventAt);
     } else {
