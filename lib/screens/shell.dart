@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../components/index.dart';
+import '../components/brk_tab_bar.dart';
 import '../theme/app_theme.dart';
 import 'battle/battle_screen.dart';
 import 'battle/plan_sheet.dart';
@@ -360,4 +361,4 @@ class _DrawerItem extends StatelessWidget {
     );
   }
 }
-}
+
