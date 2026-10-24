@@ -36,7 +36,7 @@ class SetsTab extends StatelessWidget {
                 )
               : ListView.separated(
                   padding: EdgeInsets.fromLTRB(
-                      20, 8, 20, brkFloatingBarInset(context)),
+                      20, 8, 20, MediaQuery.of(context).padding.bottom + 90),
                   itemCount: sets.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 10),
                   itemBuilder: (context, i) {

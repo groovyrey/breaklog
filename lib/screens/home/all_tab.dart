@@ -79,7 +79,7 @@ class _AllTabState extends State<AllTab> {
                 )
               : ListView(
                   padding:
-                      EdgeInsets.only(bottom: brkFloatingBarInset(context)),
+                      EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom + 90),
                   children: [
                     for (final entry in groups.entries) ...[
                       Padding(

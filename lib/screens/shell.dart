@@ -12,8 +12,8 @@ import 'home/home_screen.dart';
 import 'library/library_screen.dart';
 import 'sets/set_builder_screen.dart';
 
-/// Root shell: the four tabs, with the floating bar drawn over them so content
-/// scrolls underneath it. Stats is reached from the top bar instead.
+/// Root shell with a hamburger and drawer navigation. The floating add
+/// button sits in the bottom right of the screen.
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
 
@@ -22,34 +22,28 @@ class AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<AppShell> {
-  // Opens on the Library, not the first tab, so the app never lands on a
-  // coming soon page.
   int _index = 1;
 
-  static const List<BrkTab> _tabs = [
-    (
+  static const List<_NavItem> _items = [
+    _NavItem(
       icon: Icons.home_outlined,
       selectedIcon: Icons.home,
       label: 'Home',
-      supportsAdd: true,
     ),
-    (
+    _NavItem(
       icon: Icons.style_outlined,
       selectedIcon: Icons.style,
       label: 'Library',
-      supportsAdd: true,
     ),
-    (
+    _NavItem(
       icon: Icons.emoji_events_outlined,
       selectedIcon: Icons.emoji_events,
       label: 'Battle',
-      supportsAdd: true,
     ),
-    (
+    _NavItem(
       icon: Icons.menu_book_outlined,
       selectedIcon: Icons.menu_book,
       label: 'Book',
-      supportsAdd: false,
     ),
   ];
 
@@ -174,24 +168,196 @@ class _AppShellState extends State<AppShell> {
             ],
           ),
           Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
-                child: BrkTabBar(
-                  tabs: _tabs,
-                  currentIndex: _index,
-                  onChanged: (i) => setState(() => _index = i),
-                  onAdd: _tabs[_index].supportsAdd ? _openAddSheet : null,
-                ),
-              ),
+            left: 16,
+            top: MediaQuery.of(context).padding.top + 10,
+            child: BrkIconButton(
+              icon: Icons.menu,
+              onTap: () => _openDrawer(context),
+              size: 44,
+            ),
+          ),
+          Positioned(
+            right: 16,
+            bottom: MediaQuery.of(context).padding.bottom + 16,
+            child: BrkFab(
+              icon: Icons.add,
+              onTap: _openAddSheet,
+              size: 60,
             ),
           ),
         ],
       ),
     );
   }
+
+  Future<void> _openDrawer(BuildContext context) async {
+    await showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Menu',
+      barrierColor: Colors.transparent,
+      transitionDuration: const Duration(milliseconds: 280),
+      pageBuilder: (context, _, __) {
+        return Stack(
+          children: [
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: () => Navigator.of(context).pop(),
+                child: Container(color: Colors.transparent),
+              ),
+            ),
+            AnimatedMenuDrawer(
+              selectedIndex: _index,
+              items: _items,
+              onSelect: (i) {
+                Navigator.of(context).pop();
+                setState(() => _index = i);
+              },
+            ),
+          ],
+        );
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+        );
+        return FadeTransition(
+          opacity: curved,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.9, end: 1).animate(curved),
+            alignment: Alignment.topLeft,
+            child: child,
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _NavItem {
+  const _NavItem({
+    required this.icon,
+    required this.selectedIcon,
+    required this.label,
+  });
+
+  final IconData icon;
+  final IconData selectedIcon;
+  final String label;
+}
+
+class AnimatedMenuDrawer extends StatelessWidget {
+  const AnimatedMenuDrawer({
+    super.key,
+    required this.selectedIndex,
+    required this.items,
+    required this.onSelect,
+  });
+
+  final int selectedIndex;
+  final List<_NavItem> items;
+  final ValueChanged<int> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final top = MediaQuery.of(context).padding.top + 10;
+    final left = 16.0;
+    return Positioned(
+      left: left,
+      top: top,
+      child: Material(
+        color: Colors.transparent,
+        child: Container(
+          width: 240,
+          decoration: BoxDecoration(
+            color: AppColors.surface.withValues(alpha: 0.98),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: AppColors.outline),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.4),
+                blurRadius: 30,
+                offset: const Offset(0, 18),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(18),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.menu, size: 18, color: AppColors.onSurfaceVariant),
+                      const SizedBox(width: 10),
+                      Text(
+                        'BreakLog',
+                        style: context.appTextTheme.titleSmall
+                            ?.copyWith(color: AppColors.onSurface),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(color: AppColors.outline, height: 1),
+                for (var i = 0; i < items.length; i++) ...[
+                  _DrawerItem(
+                    item: items[i],
+                    selected: i == selectedIndex,
+                    onTap: () => onSelect(i),
+                  ),
+                ],
+                const SizedBox(height: 6),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DrawerItem extends StatelessWidget {
+  const _DrawerItem({
+    required this.item,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final _NavItem item;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.accentSoft : Colors.transparent,
+        ),
+        child: Row(
+          children: [
+            Icon(
+              selected ? item.selectedIcon : item.icon,
+              size: 20,
+              color: selected ? AppColors.accent : AppColors.onSurfaceVariant,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              item.label,
+              style: context.appTextTheme.bodyMedium?.copyWith(
+                color: selected ? AppColors.accent : AppColors.onSurface,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 }

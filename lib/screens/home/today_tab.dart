@@ -68,7 +68,7 @@ class _TodayTabState extends State<TodayTab> {
         context.watch<AppState>().notes.onDay(_today, search: widget.query);
 
     return ListView(
-      padding: EdgeInsets.only(bottom: brkFloatingBarInset(context)),
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom + 90),
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),

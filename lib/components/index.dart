@@ -13,6 +13,5 @@ export 'brk_media_tile.dart';
 export 'brk_progress.dart';
 export 'brk_sheet.dart';
 export 'brk_surface.dart';
-export 'brk_tab_bar.dart';
 export 'brk_toast.dart';
 export 'brk_video_viewer.dart';

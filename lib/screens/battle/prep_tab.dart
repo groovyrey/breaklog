@@ -46,7 +46,7 @@ class PrepTab extends StatelessWidget {
     return ListView(
       padding: EdgeInsets.only(
         top: 18,
-        bottom: brkFloatingBarInset(context),
+        bottom: MediaQuery.of(context).padding.bottom + 90,
       ),
       children: [
         Padding(

@@ -23,7 +23,7 @@ class PlanTab extends StatelessWidget {
       return ListView(
         padding: EdgeInsets.only(
           top: 30,
-          bottom: brkFloatingBarInset(context),
+          bottom: MediaQuery.of(context).padding.bottom + 90,
         ),
         children: [
           const BrkEmptyState(
@@ -40,7 +40,7 @@ class PlanTab extends StatelessWidget {
     return ListView(
       padding: EdgeInsets.only(
         top: 18,
-        bottom: brkFloatingBarInset(context),
+        bottom: MediaQuery.of(context).padding.bottom + 90,
       ),
       children: [
         const PlanSectionLabel('Battles'),
