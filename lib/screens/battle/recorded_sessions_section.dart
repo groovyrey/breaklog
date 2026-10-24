@@ -62,7 +62,7 @@ class _SessionRow extends StatelessWidget {
         .join(', ');
 
     return BrkCard(
-      onTap: () => showBrkVideoViewer(context, session.videoPath),
+      onTap: () => showBrkVideoViewer(context, session.videoPath, cover: true),
       padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
       child: Row(
         children: [

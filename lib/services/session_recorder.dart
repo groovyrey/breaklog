@@ -32,7 +32,7 @@ class SessionRecorder {
     final controller = CameraController(
       _cameras[_index],
       ResolutionPreset.high,
-      enableAudio: true,
+      enableAudio: false,
     );
     _controller = controller;
     await controller.initialize();

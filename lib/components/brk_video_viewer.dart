@@ -7,16 +7,21 @@ import 'package:video_player/video_player.dart';
 import '../theme/app_theme.dart';
 
 /// Full-screen player for a local clip, matching the photo viewer chrome.
-Future<void> showBrkVideoViewer(BuildContext context, String path) {
+Future<void> showBrkVideoViewer(
+  BuildContext context,
+  String path, {
+  bool cover = false,
+}) {
   return Navigator.of(context, rootNavigator: true).push<void>(
-    BrkVideoViewerRoute(path: path),
+    BrkVideoViewerRoute(path: path, cover: cover),
   );
 }
 
 class BrkVideoViewerRoute extends PageRoute<void> {
-  BrkVideoViewerRoute({required this.path});
+  BrkVideoViewerRoute({required this.path, this.cover = false});
 
   final String path;
+  final bool cover;
 
   @override
   Color? get barrierColor => Colors.black;
@@ -36,14 +41,15 @@ class BrkVideoViewerRoute extends PageRoute<void> {
   @override
   Widget buildPage(BuildContext context, Animation<double> animation,
       Animation<double> secondaryAnimation) {
-    return _BrkVideoViewer(path: path);
+    return _BrkVideoViewer(path: path, cover: cover);
   }
 }
 
 class _BrkVideoViewer extends StatefulWidget {
-  const _BrkVideoViewer({required this.path});
+  const _BrkVideoViewer({required this.path, required this.cover});
 
   final String path;
+  final bool cover;
 
   @override
   State<_BrkVideoViewer> createState() => _BrkVideoViewerState();
@@ -143,7 +149,7 @@ class _BrkVideoViewerState extends State<_BrkVideoViewer> {
                 behavior: HitTestBehavior.opaque,
                 child: SizedBox.expand(
                   child: FittedBox(
-                    fit: BoxFit.cover,
+                    fit: widget.cover ? BoxFit.cover : BoxFit.contain,
                     clipBehavior: Clip.hardEdge,
                     child: SizedBox(
                       width: _controller.value.size.width,
