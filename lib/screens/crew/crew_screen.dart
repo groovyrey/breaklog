@@ -149,7 +149,7 @@ class _MyCrewTabState extends State<_MyCrewTab> {
                         label: 'Find crews',
                         variant: BrkButtonVariant.secondary,
                         onPressed: () {
-                          DefaultTabController.of(context)?.animateTo(1);
+                          DefaultTabController.of(context).animateTo(1);
                         },
                       ),
                     ),
