@@ -87,6 +87,58 @@ class BreaklogApi {
     }
   }
 
+  Future<Map<String, dynamic>> getMyCrews(String idToken) =>
+      _get('/crews/me', idToken: idToken);
+
+  Future<Map<String, dynamic>> getCrews(String idToken) =>
+      _get('/crews', idToken: idToken);
+
+  Future<Map<String, dynamic>> getCrew(String idToken, String crewId) =>
+      _get('/crews/$crewId', idToken: idToken);
+
+  Future<Map<String, dynamic>> createCrew(
+    String idToken, {
+    required String name,
+    String? bio,
+    String? photoUrl,
+    bool publicMembers = true,
+  }) =>
+      _post(
+        '/crews',
+        {
+          'name': name,
+          if (bio != null) 'bio': bio,
+          if (photoUrl != null) 'photo_url': photoUrl,
+          'public_members': publicMembers,
+        },
+        idToken: idToken,
+      );
+
+  Future<Map<String, dynamic>> joinCrew(String idToken, String crewId) =>
+      _post('/crews/$crewId/join', {}, idToken: idToken);
+
+  Future<Map<String, dynamic>> leaveCrew(String idToken, String crewId) =>
+      _post('/crews/$crewId/leave', {}, idToken: idToken);
+
+  Future<Map<String, dynamic>> updateCrew(
+    String idToken,
+    String crewId, {
+    String? name,
+    String? bio,
+    String? photoUrl,
+    bool? publicMembers,
+  }) =>
+      _put(
+        '/crews/$crewId',
+        {
+          if (name != null) 'name': name,
+          if (bio != null) 'bio': bio,
+          if (photoUrl != null) 'photo_url': photoUrl,
+          if (publicMembers != null) 'public_members': publicMembers,
+        },
+        idToken: idToken,
+      );
+
   Future<Map<String, dynamic>> _post(
     String path,
     Map<String, dynamic> body, {
@@ -97,6 +149,32 @@ class BreaklogApi {
     final response = await _client
         .post(Uri.parse('$_baseUrl$path'),
             headers: headers, body: jsonEncode(body))
+        .timeout(_timeout);
+    return _decode(response);
+  }
+
+  Future<Map<String, dynamic>> _put(
+    String path,
+    Map<String, dynamic> body, {
+    String? idToken,
+  }) async {
+    final headers = <String, String>{'content-type': 'application/json'};
+    if (idToken != null) headers['authorization'] = 'Bearer $idToken';
+    final response = await _client
+        .put(Uri.parse('$_baseUrl$path'),
+            headers: headers, body: jsonEncode(body))
+        .timeout(_timeout);
+    return _decode(response);
+  }
+
+  Future<Map<String, dynamic>> _get(
+    String path, {
+    String? idToken,
+  }) async {
+    final headers = <String, String>{'content-type': 'application/json'};
+    if (idToken != null) headers['authorization'] = 'Bearer $idToken';
+    final response = await _client
+        .get(Uri.parse('$_baseUrl$path'), headers: headers)
         .timeout(_timeout);
     return _decode(response);
   }
