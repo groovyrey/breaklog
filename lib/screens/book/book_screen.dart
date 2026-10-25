@@ -1,3 +1,4 @@
+import '../shell.dart';
 import 'package:flutter/material.dart';
 
 import '../../components/index.dart';
@@ -16,10 +17,16 @@ class BookScreen extends StatelessWidget {
         bottom: false,
         child: Column(
           children: [
-            const BrkHeader(
-              title: 'Book',
-              mark: BrkBrandMark(),
-              actions: [TopBarActions()],
+            Builder(
+              builder: (ctx) => BrkHeader(
+                title: 'Book',
+                mark: const BrkBrandMark(),
+                onMenu: () {
+                  final state = ctx.findAncestorStateOfType<_AppShellState>();
+                  state?.openDrawer(ctx);
+                },
+                actions: const [TopBarActions()],
+              ),
             ),
             const Expanded(
               child: BrkEmptyState(

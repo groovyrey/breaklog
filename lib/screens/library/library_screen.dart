@@ -1,3 +1,4 @@
+import '../shell.dart';
 import 'package:flutter/material.dart';
 
 import '../../components/index.dart';
@@ -21,10 +22,16 @@ class LibraryScreen extends StatelessWidget {
           bottom: false,
           child: Column(
             children: [
-              BrkHeader(
-                title: 'Library',
-                mark: const BrkBrandMark(),
-                actions: const [TopBarActions()],
+              Builder(
+                builder: (ctx) => BrkHeader(
+                  title: 'Library',
+                  mark: const BrkBrandMark(),
+                  onMenu: () {
+                    final state = ctx.findAncestorStateOfType<_AppShellState>();
+                    state?.openDrawer(ctx);
+                  },
+                  actions: const [TopBarActions()],
+                ),
               ),
               Container(
                 color: AppColors.surface,

@@ -1,3 +1,4 @@
+import '../shell.dart';
 import 'package:flutter/material.dart';
 
 import '../../components/index.dart';
@@ -21,10 +22,16 @@ class BattleScreen extends StatelessWidget {
           bottom: false,
           child: Column(
             children: [
-              const BrkHeader(
-                title: 'Battle',
-                mark: BrkBrandMark(),
-                actions: [TopBarActions()],
+              Builder(
+                builder: (ctx) => BrkHeader(
+                  title: 'Battle',
+                  mark: const BrkBrandMark(),
+                  onMenu: () {
+                    final state = ctx.findAncestorStateOfType<_AppShellState>();
+                    state?.openDrawer(ctx);
+                  },
+                  actions: const [TopBarActions()],
+                ),
               ),
               Container(
                 color: AppColors.surface,

@@ -12,6 +12,7 @@ class BrkHeader extends StatelessWidget {
     this.actions = const [],
     this.leading,
     this.onLeading,
+    this.onMenu,
     this.mark,
   });
 
@@ -20,6 +21,7 @@ class BrkHeader extends StatelessWidget {
   final List<Widget> actions;
   final IconData? leading;
   final VoidCallback? onLeading;
+  final VoidCallback? onMenu;
 
   /// Brand mark set to the left of the title.
   final Widget? mark;
@@ -30,6 +32,10 @@ class BrkHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 20, 12, 12),
       child: Row(
         children: [
+          if (onMenu != null) ...[
+            BrkIconButton(icon: Icons.menu, onTap: onMenu, size: 40),
+            const SizedBox(width: 6),
+          ],
           if (leading != null) ...[
             BrkIconButton(icon: leading!, onTap: onLeading, size: 40),
             const SizedBox(width: 6),

@@ -168,15 +168,7 @@ class _AppShellState extends State<AppShell> {
               BookScreen(),
             ],
           ),
-          Positioned(
-            left: 16,
-            top: MediaQuery.of(context).padding.top + 10,
-            child: BrkIconButton(
-              icon: Icons.menu,
-              onTap: () => _openDrawer(context),
-              size: 44,
-            ),
-          ),
+
           Positioned(
             right: 16,
             bottom: MediaQuery.of(context).padding.bottom + 16,
@@ -191,7 +183,7 @@ class _AppShellState extends State<AppShell> {
     );
   }
 
-  Future<void> _openDrawer(BuildContext context) async {
+  Future<void> openDrawer(BuildContext context) async {
     await showGeneralDialog(
       context: context,
       barrierDismissible: true,
