@@ -525,62 +525,6 @@ class _CrewDetailScreenState extends State<_CrewDetailScreen> {
     );
   }
 
-  Future<void> _showSettings(BuildContext context, Map<String, dynamic> crew) async {
-    final bioCtrl = TextEditingController(text: crew['bio'] ?? '');
-    bool publicMembers = crew['public_members'] == 1 || crew['public_members'] == true;
-    await showBrkSheet(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSheet) => BrkSheet(
-          title: 'Crew settings',
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              BrkField(controller: bioCtrl, hint: 'Bio', maxLines: 4),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Allow non-members to view members',
-                      style: context.appTextTheme.bodyMedium,
-                    ),
-                  ),
-                  BrkSwitch(
-                    value: publicMembers,
-                    onChanged: (v) => setSheet(() => publicMembers = v),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              BrkButton(
-                label: 'Save',
-                onPressed: () async {
-                  try {
-                    final state = ctx.read<AppState>();
-                    final token = await state.auth.idToken();
-                    if (token == null) return;
-                    await state.api.updateCrew(
-                      token,
-                      crew['crew_id'],
-                      bio: bioCtrl.text,
-                      publicMembers: publicMembers,
-                    );
-                    if (ctx.mounted) Navigator.of(ctx).pop();
-                    if (mounted) _load();
-                  } catch (e) {
-                    if (ctx.mounted) {
-                      showBrkToast(ctx, e.toString(), icon: Icons.error_outline);
-                    }
-                  }
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _FindCrewsTab extends StatefulWidget {
