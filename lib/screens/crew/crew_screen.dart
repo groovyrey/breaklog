@@ -73,7 +73,6 @@ class _MyCrewTab extends StatefulWidget {
 class _MyCrewTabState extends State<_MyCrewTab> {
   bool _loading = true;
   List<Map<String, dynamic>> _crews = [];
-  String? _error;
 
   @override
   void initState() {
@@ -84,13 +83,12 @@ class _MyCrewTabState extends State<_MyCrewTab> {
   Future<void> _load() async {
     setState(() {
       _loading = true;
-      _error = null;
     });
     try {
       final state = context.read<AppState>();
       final token = await state.auth.idToken();
       if (token == null) {
-        if (mounted) setState(() => _error = 'Sign in required');
+        if (mounted) setState(() => _loading = false);
         return;
       }
       final res = await state.api.getMyCrews(token);
@@ -101,7 +99,9 @@ class _MyCrewTabState extends State<_MyCrewTab> {
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
+      if (mounted) {
+        showBrkToast(context, e.toString(), icon: Icons.error_outline);
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -349,7 +349,7 @@ class _CrewDetailScreenState extends State<_CrewDetailScreen> {
                         size: 40,
                       )
                     ]
-                  : null,
+                  : const [],
             ),
             Expanded(
               child: ListView(
