@@ -7,6 +7,7 @@ import 'battle/battle_screen.dart';
 import 'battle/plan_sheet.dart';
 import 'battle/prep_tab.dart';
 import 'book/book_screen.dart';
+import 'crew/crew_screen.dart';
 import 'edit/add_edit_move_screen.dart';
 import 'home/add_note_sheet.dart';
 import 'home/home_screen.dart';
@@ -49,6 +50,11 @@ class AppShellState extends State<AppShell>
       icon: Icons.emoji_events_outlined,
       selectedIcon: Icons.emoji_events,
       label: 'Battle',
+    ),
+    NavItem(
+      icon: Icons.groups_outlined,
+      selectedIcon: Icons.groups,
+      label: 'Crew',
     ),
     NavItem(
       icon: Icons.menu_book_outlined,
@@ -215,6 +221,7 @@ class AppShellState extends State<AppShell>
                         HomeScreen(),
                         LibraryScreen(),
                         BattleScreen(),
+                        CrewScreen(),
                         BookScreen(),
                       ],
                     ),
