@@ -81,21 +81,55 @@ class _CrewSettingsScreenState extends State<CrewSettingsScreen> {
                           ],
                         ),
                         const SizedBox(height: 12),
-                        BrkButton(
-                          label: 'Change photo',
-                          variant: BrkButtonVariant.secondary,
-                          onPressed: () async {
-                            final picker = ImagePicker();
-                            final file =
-                                await picker.pickImage(source: ImageSource.gallery);
-                            if (file == null) return;
-                            final bytes = await file.readAsBytes();
-                            setState(() {
-                              _photoBase64 =
-                                  'data:image/jpeg;base64,${base64Encode(bytes)}';
-                            });
-                          },
+                        Center(
+                          child: GestureDetector(
+                            onTap: () async {
+                              final picker = ImagePicker();
+                              final file = await picker.pickImage(
+                                  source: ImageSource.gallery);
+                              if (file == null) return;
+                              final bytes = await file.readAsBytes();
+                              setState(() {
+                                _photoBase64 =
+                                    'data:image/jpeg;base64,${base64Encode(bytes)}';
+                              });
+                            },
+                            child: Stack(
+                              children: [
+                                CircleAvatar(
+                                  radius: 40,
+                                  backgroundColor: AppColors.surfaceVariant,
+                                  backgroundImage: _photoBase64 != null
+                                      ? MemoryImage(base64Decode(
+                                          _photoBase64!.split(',').last))
+                                      : (widget.crew['photo_url'] != null
+                                          ? NetworkImage(widget.crew['photo_url'])
+                                          : null),
+                                  child: _photoBase64 == null &&
+                                          widget.crew['photo_url'] == null
+                                      ? const Icon(Icons.groups,
+                                          size: 32,
+                                          color: AppColors.onSurfaceVariant)
+                                      : null,
+                                ),
+                                Positioned(
+                                  bottom: 0,
+                                  right: 0,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(5),
+                                    decoration: const BoxDecoration(
+                                      color: AppColors.accent,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.camera_alt,
+                                        size: 14, color: AppColors.onBackground),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
+                        const SizedBox(height: 14),
                       ],
                     ),
                   ),

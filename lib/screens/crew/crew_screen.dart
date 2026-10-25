@@ -1,8 +1,7 @@
-import 'dart:convert';
+
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../components/index.dart';
@@ -10,6 +9,7 @@ import '../../state/app_state.dart';
 import '../../theme/app_theme.dart';
 import '../shell.dart';
 import '../top_actions.dart';
+import 'crew_create_screen.dart';
 import 'crew_settings_screen.dart';
 
 
@@ -149,7 +149,10 @@ class _MyCrewTabState extends State<_MyCrewTab> {
                         label: 'Create crew',
                         icon: Icons.add,
                         onPressed: () async {
-                          final created = await _showCreateCrew(context);
+                          final created = await Navigator.of(context).push(
+                            MaterialPageRoute(
+                                builder: (_) => const CrewCreateScreen()),
+                          );
                           if (created == true) _load();
                         },
                       ),
@@ -221,7 +224,9 @@ class _MyCrewTabState extends State<_MyCrewTab> {
           label: 'Create crew',
           icon: Icons.add,
           onPressed: () async {
-            final created = await _showCreateCrew(context);
+            final created = await Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const CrewCreateScreen()),
+            );
             if (created == true) _load();
           },
         ),
@@ -229,80 +234,7 @@ class _MyCrewTabState extends State<_MyCrewTab> {
     );
   }
 
-  Future<bool?> _showCreateCrew(BuildContext context) async {
-    final nameCtrl = TextEditingController();
-    final bioCtrl = TextEditingController();
-    bool publicMembers = true;
-    String? photoBase64;
 
-    return showBrkSheet<bool>(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSheet) => BrkSheet(
-          title: 'Create crew',
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              BrkField(controller: nameCtrl, hint: 'Crew name'),
-              const SizedBox(height: 12),
-              BrkField(controller: bioCtrl, hint: 'Bio', maxLines: 4),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Allow non-members to view members',
-                      style: context.appTextTheme.bodyMedium,
-                    ),
-                  ),
-                  BrkSwitch(
-                    value: publicMembers,
-                    onChanged: (v) => setSheet(() => publicMembers = v),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              BrkButton(
-                label: 'Pick photo (PNG/JPG/JPEG)',
-                variant: BrkButtonVariant.secondary,
-                onPressed: () async {
-                  final picker = ImagePicker();
-                  final file = await picker.pickImage(source: ImageSource.gallery);
-                  if (file == null) return;
-                  final bytes = await file.readAsBytes();
-                  photoBase64 = 'data:image/jpeg;base64,${base64Encode(bytes)}';
-                  setSheet(() {});
-                },
-              ),
-              const SizedBox(height: 16),
-              BrkButton(
-                label: 'Create',
-                onPressed: () async {
-                  try {
-                    final state = ctx.read<AppState>();
-                    final token = await state.auth.idToken();
-                    if (token == null) return;
-                    await state.api.createCrew(
-                      token,
-                      name: nameCtrl.text,
-                      bio: bioCtrl.text,
-                      photoUrl: photoBase64,
-                      publicMembers: publicMembers,
-                    );
-                    if (ctx.mounted) Navigator.of(ctx).pop(true);
-                  } catch (e) {
-                    if (ctx.mounted) {
-                      showBrkToast(ctx, e.toString(), icon: Icons.error_outline);
-                    }
-                  }
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _CrewDetailScreen extends StatefulWidget {
