@@ -1,4 +1,3 @@
-import '../shell.dart';
 import 'package:flutter/material.dart';
 
 import '../../components/index.dart';
@@ -41,7 +40,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   title: 'Home',
                   mark: const BrkBrandMark(),
                   onMenu: () {
-                    final state = ctx.findAncestorStateOfType<_AppShellState>();
+                    final state = ctx.findAncestorStateOfType<AppShellState>();
                     state?.openDrawer(ctx);
                   },
                   actions: const [TopBarActions()],
