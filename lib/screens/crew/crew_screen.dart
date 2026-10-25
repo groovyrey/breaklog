@@ -9,6 +9,16 @@ import '../../state/app_state.dart';
 import '../../theme/app_theme.dart';
 import '../shell.dart';
 import '../top_actions.dart';
+import 'crew_settings_screen.dart';
+
+
+String _fmtDate(dynamic v) {
+  if (v == null) return '';
+  final ms = v is int ? v : (int.tryParse(v.toString()) ?? 0);
+  if (ms == 0) return '';
+  final dt = DateTime.fromMillisecondsSinceEpoch(ms);
+  return '${dt.month}/${dt.day}/${dt.year}';
+}
 
 class CrewScreen extends StatelessWidget {
   const CrewScreen({super.key});
@@ -341,15 +351,30 @@ class _CrewDetailScreenState extends State<_CrewDetailScreen> {
               title: crew['name'] ?? 'Crew',
               leading: Icons.arrow_back,
               onLeading: () => Navigator.of(context).pop(),
-              actions: isMember
-                  ? [
-                      BrkIconButton(
-                        icon: Icons.settings_outlined,
-                        onTap: () => _showSettings(context, crew),
-                        size: 40,
-                      )
-                    ]
-                  : const [],
+              actions: () {
+                final uid = context.read<AppState>().auth.currentUser?.uid;
+                final isFounder = widget.crew['role'] == 'founder' ||
+                    crew['founder_id'] == uid ||
+                    _detail?['crew']?['founder_id'] == uid;
+                return isFounder
+                    ? [
+                        BrkIconButton(
+                          icon: Icons.settings_outlined,
+                          onTap: () async {
+                            final changed = await Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => CrewSettingsScreen(
+                                  crew: {...crew, ...widget.crew, ...(_detail?['crew'] ?? {})},
+                                ),
+                              ),
+                            );
+                            if (changed == true && mounted) _load();
+                          },
+                          size: 40,
+                        )
+                      ]
+                    : const [];
+              }(),
             ),
             Expanded(
               child: ListView(
@@ -426,11 +451,21 @@ class _CrewDetailScreenState extends State<_CrewDetailScreen> {
                             ),
                             const SizedBox(width: 10),
                             Expanded(
-                              child: Text(
-                                m['alias']?.toString().isNotEmpty == true
-                                    ? m['alias']
-                                    : (m['name'] ?? 'Member'),
-                                style: context.appTextTheme.bodyMedium,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    m['alias']?.toString().isNotEmpty == true
+                                        ? m['alias']
+                                        : (m['name'] ?? 'Member'),
+                                    style: context.appTextTheme.bodyMedium,
+                                  ),
+                                  if (m['joined_at'] != null)
+                                    Text(
+                                      'Joined ${_fmtDate(m['joined_at'])}',
+                                      style: context.appTextTheme.bodySmall,
+                                    ),
+                                ],
                               ),
                             ),
                             Text(
@@ -625,10 +660,10 @@ class _FindCrewsTabState extends State<_FindCrewsTab> {
                             ?.copyWith(color: AppColors.onSurface),
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        '${crew['member_count'] ?? 0} members',
-                        style: context.appTextTheme.bodySmall,
-                      ),
+                              Text(
+                                '${crew['member_count'] ?? 0} members • ${_fmtDate(crew['created_at'])}',
+                                style: context.appTextTheme.bodySmall,
+                              ),
                     ],
                   ),
                 ),

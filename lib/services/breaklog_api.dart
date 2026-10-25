@@ -139,6 +139,9 @@ class BreaklogApi {
         idToken: idToken,
       );
 
+  Future<Map<String, dynamic>> disbandCrew(String idToken, String crewId) =>
+      _post('/crews/$crewId/disband', {}, idToken: idToken);
+
   Future<Map<String, dynamic>> _post(
     String path,
     Map<String, dynamic> body, {
