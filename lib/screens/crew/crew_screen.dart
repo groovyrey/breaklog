@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -352,28 +353,28 @@ class _CrewDetailScreenState extends State<_CrewDetailScreen> {
               leading: Icons.arrow_back,
               onLeading: () => Navigator.of(context).pop(),
               actions: () {
-                final uid = context.read<AppState>().auth.currentUser?.uid;
+                final state = context.read<AppState>();
+                final uid = FirebaseAuth.instance.currentUser?.uid;
                 final isFounder = widget.crew['role'] == 'founder' ||
                     crew['founder_id'] == uid ||
                     _detail?['crew']?['founder_id'] == uid;
-                return isFounder
-                    ? [
-                        BrkIconButton(
-                          icon: Icons.settings_outlined,
-                          onTap: () async {
-                            final changed = await Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => CrewSettingsScreen(
-                                  crew: {...crew, ...widget.crew, ...(_detail?['crew'] ?? {})},
-                                ),
-                              ),
-                            );
-                            if (changed == true && mounted) _load();
-                          },
-                          size: 40,
-                        )
-                      ]
-                    : const [];
+                if (!isFounder) return <Widget>[];
+                return [
+                  BrkIconButton(
+                    icon: Icons.settings_outlined,
+                    onTap: () async {
+                      final changed = await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => CrewSettingsScreen(
+                            crew: {...crew, ...widget.crew, ...(_detail?['crew'] ?? {})},
+                          ),
+                        ),
+                      );
+                      if (changed == true && mounted) _load();
+                    },
+                    size: 40,
+                  )
+                ];
               }(),
             ),
             Expanded(
