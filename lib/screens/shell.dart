@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../components/index.dart';
-import '../components/brk_tab_bar.dart';
 import '../theme/app_theme.dart';
 import 'battle/battle_screen.dart';
 import 'battle/plan_sheet.dart';
@@ -13,8 +12,8 @@ import 'home/home_screen.dart';
 import 'library/library_screen.dart';
 import 'sets/set_builder_screen.dart';
 
-/// Root shell with a hamburger and drawer navigation. The floating add
-/// button sits in the bottom right of the screen.
+/// Root shell with a slide-out navigation drawer. The add button stays
+/// at the bottom right.
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
 
@@ -22,9 +21,18 @@ class AppShell extends StatefulWidget {
   State<AppShell> createState() => AppShellState();
 }
 
-class AppShellState extends State<AppShell> {
+class AppShellState extends State<AppShell>
+    with SingleTickerProviderStateMixin {
   int _index = 1;
+  bool _drawerOpen = false;
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 280),
+  );
+  late final Animation<double> _animation =
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic);
 
+  static const double _drawerWidth = 280;
   static const List<NavItem> _items = [
     NavItem(
       icon: Icons.home_outlined,
@@ -47,6 +55,33 @@ class AppShellState extends State<AppShell> {
       label: 'Book',
     ),
   ];
+
+  void toggleDrawer() {
+    setState(() {
+      _drawerOpen = !_drawerOpen;
+      if (_drawerOpen) {
+        _controller.forward();
+      } else {
+        _controller.reverse();
+      }
+    });
+  }
+
+  void openDrawer() {
+    if (_drawerOpen) return;
+    setState(() {
+      _drawerOpen = true;
+      _controller.forward();
+    });
+  }
+
+  void closeDrawer() {
+    if (!_drawerOpen) return;
+    setState(() {
+      _drawerOpen = false;
+      _controller.reverse();
+    });
+  }
 
   Future<void> _openAddSheet() async {
     // Index 0 is Home, whose only add is a note; the library keeps moves and sets.
@@ -154,76 +189,115 @@ class AppShellState extends State<AppShell> {
   }
 
   @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
-          IndexedStack(
-            index: _index,
-            children: const [
-              HomeScreen(),
-              LibraryScreen(),
-              BattleScreen(),
-              BookScreen(),
-            ],
+          AnimatedBuilder(
+            animation: _animation,
+            builder: (context, child) {
+              final offset = _drawerWidth * _animation.value;
+              return Transform.translate(
+                offset: Offset(offset, 0),
+                child: Stack(
+                  children: [
+                    IndexedStack(
+                      index: _index,
+                      children: const [
+                        HomeScreen(),
+                        LibraryScreen(),
+                        BattleScreen(),
+                        BookScreen(),
+                      ],
+                    ),
+                    Positioned(
+                      right: 16,
+                      bottom: MediaQuery.of(context).padding.bottom + 16,
+                      child: BrkFab(
+                        icon: Icons.add,
+                        onTap: _openAddSheet,
+                        size: 60,
+                      ),
+                    ),
+                    if (_drawerOpen)
+                      Positioned.fill(
+                        child: GestureDetector(
+                          onTap: closeDrawer,
+                          child: Container(
+                            color: Colors.black
+                                .withValues(alpha: 0.4 * _animation.value),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            },
           ),
-
-          Positioned(
-            right: 16,
-            bottom: MediaQuery.of(context).padding.bottom + 16,
-            child: BrkFab(
-              icon: Icons.add,
-              onTap: _openAddSheet,
-              size: 60,
-            ),
+          AnimatedBuilder(
+            animation: _animation,
+            builder: (context, child) {
+              final translateX = -_drawerWidth + (_drawerWidth * _animation.value);
+              return Transform.translate(
+                offset: Offset(translateX, 0),
+                child: SafeArea(
+                  child: Container(
+                    width: _drawerWidth,
+                    height: double.infinity,
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      border: const Border(
+                        right: BorderSide(color: AppColors.outline),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 18, 20, 12),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.menu,
+                                  size: 18, color: AppColors.onSurfaceVariant),
+                              const SizedBox(width: 10),
+                              Text(
+                                'BreakLog',
+                                style: context.appTextTheme.titleSmall
+                                    ?.copyWith(color: AppColors.onSurface),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Divider(color: AppColors.outline, height: 1),
+                        const SizedBox(height: 6),
+                        for (var i = 0; i < _items.length; i++) ...[
+                          _DrawerItem(
+                            item: _items[i],
+                            selected: i == _index,
+                            onTap: () {
+                              setState(() => _index = i);
+                              closeDrawer();
+                            },
+                          ),
+                        ],
+                        const Spacer(),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ),
-    );
-  }
-
-  Future<void> openDrawer(BuildContext context) async {
-    await showGeneralDialog(
-      context: context,
-      barrierDismissible: true,
-      barrierLabel: 'Menu',
-      barrierColor: Colors.transparent,
-      transitionDuration: const Duration(milliseconds: 280),
-      pageBuilder: (context, _, __) {
-        return Stack(
-          children: [
-            Positioned.fill(
-              child: GestureDetector(
-                onTap: () => Navigator.of(context).pop(),
-                child: Container(color: Colors.transparent),
-              ),
-            ),
-            AnimatedMenuDrawer(
-              selectedIndex: _index,
-              items: _items,
-              onSelect: (i) {
-                Navigator.of(context).pop();
-                setState(() => _index = i);
-              },
-            ),
-          ],
-        );
-      },
-      transitionBuilder: (context, animation, secondaryAnimation, child) {
-        final curved = CurvedAnimation(
-          parent: animation,
-          curve: Curves.easeOutCubic,
-        );
-        return FadeTransition(
-          opacity: curved,
-          child: ScaleTransition(
-            scale: Tween<double>(begin: 0.9, end: 1).animate(curved),
-            alignment: Alignment.topLeft,
-            child: child,
-          ),
-        );
-      },
     );
   }
 }
@@ -240,77 +314,7 @@ class NavItem {
   final String label;
 }
 
-class AnimatedMenuDrawer extends StatelessWidget {
-  const AnimatedMenuDrawer({
-    super.key,
-    required this.selectedIndex,
-    required this.items,
-    required this.onSelect,
-  });
 
-  final int selectedIndex;
-  final List<NavItem> items;
-  final ValueChanged<int> onSelect;
-
-  @override
-  Widget build(BuildContext context) {
-    final top = MediaQuery.of(context).padding.top + 10;
-    final left = 16.0;
-    return Positioned(
-      left: left,
-      top: top,
-      child: Material(
-        color: Colors.transparent,
-        child: Container(
-          width: 240,
-          decoration: BoxDecoration(
-            color: AppColors.surface.withValues(alpha: 0.98),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: AppColors.outline),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.4),
-                blurRadius: 30,
-                offset: const Offset(0, 18),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(18),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.menu, size: 18, color: AppColors.onSurfaceVariant),
-                      const SizedBox(width: 10),
-                      Text(
-                        'BreakLog',
-                        style: context.appTextTheme.titleSmall
-                            ?.copyWith(color: AppColors.onSurface),
-                      ),
-                    ],
-                  ),
-                ),
-                const Divider(color: AppColors.outline, height: 1),
-                for (var i = 0; i < items.length; i++) ...[
-                  _DrawerItem(
-                    item: items[i],
-                    selected: i == selectedIndex,
-                    onTap: () => onSelect(i),
-                  ),
-                ],
-                const SizedBox(height: 6),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class _DrawerItem extends StatelessWidget {
   const _DrawerItem({
