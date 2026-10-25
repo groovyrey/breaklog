@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../components/brk_tab_bar.dart';
 import '../components/index.dart';
 import '../theme/app_theme.dart';
 import 'battle/battle_screen.dart';
@@ -196,7 +197,6 @@ class AppShellState extends State<AppShell>
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Stack(
