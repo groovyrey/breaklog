@@ -191,8 +191,8 @@ class _CrewSettingsScreenState extends State<CrewSettingsScreen> {
                               await state.api.disbandCrew(
                                   token, widget.crew['crew_id']);
                               if (mounted) {
-                                Navigator.of(context)
-                                    .popUntil((route) => route.isFirst);
+                                showBrkToast(context, 'Crew disbanded');
+                                Navigator.of(context).popUntil((route) => route.isFirst);
                               }
                             } catch (e) {
                               if (mounted) {
