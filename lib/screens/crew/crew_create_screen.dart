@@ -84,11 +84,11 @@ class _CrewCreateScreenState extends State<CrewCreateScreen> {
                                   child: Container(
                                     padding: const EdgeInsets.all(6),
                                     decoration: const BoxDecoration(
-                                      color: AppColors.accent,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(Icons.camera_alt,
-                                        size: 16, color: AppColors.onBackground),
+                                    color: AppColors.accent,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.camera_alt,
+                                      size: 16, color: AppColors.onSurface),
                                   ),
                                 ),
                               ],

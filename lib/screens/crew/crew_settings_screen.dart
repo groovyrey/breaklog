@@ -122,7 +122,7 @@ class _CrewSettingsScreenState extends State<CrewSettingsScreen> {
                                       shape: BoxShape.circle,
                                     ),
                                     child: const Icon(Icons.camera_alt,
-                                        size: 14, color: AppColors.onBackground),
+                                        size: 14, color: AppColors.onSurface),
                                   ),
                                 ),
                               ],
