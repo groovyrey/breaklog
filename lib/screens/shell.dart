@@ -25,23 +25,23 @@ class AppShell extends StatefulWidget {
 class AppShellState extends State<AppShell> {
   int _index = 1;
 
-  static const List<_NavItem> _items = [
-    _NavItem(
+  static const List<NavItem> _items = [
+    NavItem(
       icon: Icons.home_outlined,
       selectedIcon: Icons.home,
       label: 'Home',
     ),
-    _NavItem(
+    NavItem(
       icon: Icons.style_outlined,
       selectedIcon: Icons.style,
       label: 'Library',
     ),
-    _NavItem(
+    NavItem(
       icon: Icons.emoji_events_outlined,
       selectedIcon: Icons.emoji_events,
       label: 'Battle',
     ),
-    _NavItem(
+    NavItem(
       icon: Icons.menu_book_outlined,
       selectedIcon: Icons.menu_book,
       label: 'Book',
@@ -228,8 +228,8 @@ class AppShellState extends State<AppShell> {
   }
 }
 
-class _NavItem {
-  const _NavItem({
+class NavItem {
+  const NavItem({
     required this.icon,
     required this.selectedIcon,
     required this.label,
@@ -249,7 +249,7 @@ class AnimatedMenuDrawer extends StatelessWidget {
   });
 
   final int selectedIndex;
-  final List<_NavItem> items;
+  final List<NavItem> items;
   final ValueChanged<int> onSelect;
 
   @override
@@ -319,7 +319,7 @@ class _DrawerItem extends StatelessWidget {
     required this.onTap,
   });
 
-  final _NavItem item;
+  final NavItem item;
   final bool selected;
   final VoidCallback onTap;
 
