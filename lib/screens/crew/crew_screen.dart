@@ -353,7 +353,6 @@ class _CrewDetailScreenState extends State<_CrewDetailScreen> {
               leading: Icons.arrow_back,
               onLeading: () => Navigator.of(context).pop(),
               actions: () {
-                final state = context.read<AppState>();
                 final uid = FirebaseAuth.instance.currentUser?.uid;
                 final isFounder = widget.crew['role'] == 'founder' ||
                     crew['founder_id'] == uid ||
