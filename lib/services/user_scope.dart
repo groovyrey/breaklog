@@ -2,7 +2,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class UserScope {
-  static String get uid => FirebaseAuth.instance.currentUser?.uid ?? 'guest';
+  static String get uid {
+    try {
+      return FirebaseAuth.instance.currentUser?.uid ?? 'guest';
+    } catch (_) {
+      return 'guest';
+    }
+  }
 
   static Future<String> key(String base) async {
     final id = uid;
@@ -12,7 +18,8 @@ class UserScope {
 
   static Future<String?> getString(String base) async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(await key(base)) ?? prefs.getString(base);
+    final k = await key(base);
+    return prefs.getString(k) ?? prefs.getString(base);
   }
 
   static Future<void> setString(String base, String value) async {
