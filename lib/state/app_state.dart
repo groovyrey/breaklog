@@ -14,6 +14,8 @@ import '../services/note_repository.dart';
 import '../services/notification_service.dart';
 import '../services/prep_repository.dart';
 import '../services/set_repository.dart';
+import '../services/storage_migrator.dart';
+import '../services/user_scope.dart';
 import 'update_notifier.dart';
 
 /// What a profile save did, so the screen can say it plainly.
@@ -157,13 +159,20 @@ class AppState extends ChangeNotifier {
   Future<void> init() async {
     if (_inited) return;
     try {
+      await StorageMigrator.migrate();
       final prefs = await SharedPreferences.getInstance();
-      _betaChannel = prefs.getBool(_betaKey) ?? false;
-      _reminders = _parseReminders(prefs.getStringList(_remindersKey));
-      _alias = prefs.getString(_aliasKey) ?? '';
-      _startedAt = _parseDate(prefs.getString(_startedKey));
-      _why = prefs.getString(_whyKey) ?? '';
-      final profileUpdated = prefs.getInt(_profileUpdatedKey);
+      final betaKey = await UserScope.key(_betaKey);
+      final aliasKey = await UserScope.key(_aliasKey);
+      final startedKey = await UserScope.key(_startedKey);
+      final whyKey = await UserScope.key(_whyKey);
+      final profileUpdatedKey = await UserScope.key(_profileUpdatedKey);
+      final remindersKey = await UserScope.key(_remindersKey);
+      _betaChannel = prefs.getBool(betaKey) ?? prefs.getBool(_betaKey) ?? false;
+      _reminders = _parseReminders(prefs.getStringList(remindersKey) ?? prefs.getStringList(_remindersKey));
+      _alias = prefs.getString(aliasKey) ?? prefs.getString(_aliasKey) ?? '';
+      _startedAt = _parseDate(prefs.getString(startedKey) ?? prefs.getString(_startedKey));
+      _why = prefs.getString(whyKey) ?? prefs.getString(_whyKey) ?? '';
+      final profileUpdated = prefs.getInt(profileUpdatedKey) ?? prefs.getInt(_profileUpdatedKey);
       if (profileUpdated != null) {
         _profileUpdatedAt = DateTime.fromMillisecondsSinceEpoch(profileUpdated);
       }
@@ -401,10 +410,39 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  void _onAuthChanged() {
+  void _onAuthChanged() async {
     final signedIn = auth.signedIn;
     if (signedIn == _wasSignedIn) return;
     _wasSignedIn = signedIn;
-    if (signedIn) _register();
+    if (signedIn) {
+      await StorageMigrator.migrate();
+      await Future.wait([
+        moves.load(),
+        categories.load(),
+        sets.load(),
+        notes.load(),
+        battle.load(),
+        sessions.load(),
+        prep.load(),
+      ]);
+      final prefs = await SharedPreferences.getInstance();
+      final betaKey = await UserScope.key(_betaKey);
+      final aliasKey = await UserScope.key(_aliasKey);
+      final startedKey = await UserScope.key(_startedKey);
+      final whyKey = await UserScope.key(_whyKey);
+      final profileUpdatedKey = await UserScope.key(_profileUpdatedKey);
+      final remindersKey = await UserScope.key(_remindersKey);
+      _betaChannel = prefs.getBool(betaKey) ?? prefs.getBool(_betaKey) ?? false;
+      _reminders = _parseReminders(prefs.getStringList(remindersKey) ?? prefs.getStringList(_remindersKey));
+      _alias = prefs.getString(aliasKey) ?? prefs.getString(_aliasKey) ?? '';
+      _startedAt = _parseDate(prefs.getString(startedKey) ?? prefs.getString(_startedKey));
+      _why = prefs.getString(whyKey) ?? prefs.getString(_whyKey) ?? '';
+      final profileUpdated = prefs.getInt(profileUpdatedKey) ?? prefs.getInt(_profileUpdatedKey);
+      if (profileUpdated != null) {
+        _profileUpdatedAt = DateTime.fromMillisecondsSinceEpoch(profileUpdated);
+      }
+      notifyListeners();
+      _register();
+    }
   }
 }

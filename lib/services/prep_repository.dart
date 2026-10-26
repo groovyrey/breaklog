@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'user_scope.dart';
+
 import '../models/prep_item.dart';
 
 /// Owns the battle prep checklist. Items keep their added order, with the
@@ -27,7 +29,9 @@ class PrepRepository extends ChangeNotifier {
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_storageKey);
+    final key = await UserScope.key(_storageKey);
+    String? raw = prefs.getString(key);
+    raw ??= prefs.getString(_storageKey);
     if (raw != null && raw.isNotEmpty) {
       try {
         final decoded = jsonDecode(raw) as List<dynamic>;

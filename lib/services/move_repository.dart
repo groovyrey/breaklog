@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/move.dart';
+import 'user_scope.dart';
 
 /// Owns the move list and persists it as JSON in shared_preferences.
 ///
@@ -24,7 +25,9 @@ class MoveRepository extends ChangeNotifier {
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_storageKey);
+    final key = await UserScope.key(_storageKey);
+    String? raw = prefs.getString(key);
+    raw ??= prefs.getString(_storageKey);
     if (raw != null && raw.isNotEmpty) {
       try {
         final decoded = jsonDecode(raw) as List<dynamic>;
@@ -35,6 +38,8 @@ class MoveRepository extends ChangeNotifier {
       } catch (_) {
         _moves = const [];
       }
+    } else {
+      _moves = const [];
     }
     _loaded = true;
     notifyListeners();
@@ -105,8 +110,9 @@ class MoveRepository extends ChangeNotifier {
 
   Future<void> _persist() async {
     final prefs = await SharedPreferences.getInstance();
+    final key = await UserScope.key(_storageKey);
     await prefs.setString(
-      _storageKey,
+      key,
       jsonEncode(_moves.map((m) => m.toJson()).toList()),
     );
   }

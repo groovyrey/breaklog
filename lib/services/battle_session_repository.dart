@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'user_scope.dart';
+
 import '../models/battle_session.dart';
 
 /// Owns the recorded simulation sessions. Kept apart from the plans so a plan
@@ -24,7 +26,9 @@ class BattleSessionRepository extends ChangeNotifier {
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_storageKey);
+    final key = await UserScope.key(_storageKey);
+    String? raw = prefs.getString(key);
+    raw ??= prefs.getString(_storageKey);
     if (raw != null && raw.isNotEmpty) {
       _sessions = _parse(raw);
     }
